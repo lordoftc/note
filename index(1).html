@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#7719aa">
+<title>Mes Notes</title>
+<style>
+:root{
+  --accent:#7719aa; --accent-soft:#efe3f6; --bg:#ffffff; --bg2:#f5f5f7; --bg3:#ebebef;
+  --text:#1c1c1e; --muted:#76767c; --line:#e0e0e6; --sel:#dcebf7; --danger:#c42b1c;
+}
+@media (prefers-color-scheme:dark){
+  :root{--accent:#b36ae0; --accent-soft:#34203f; --bg:#1b1b1f; --bg2:#242429; --bg3:#2d2d33;
+    --text:#f2f2f4; --muted:#9a9aa3; --line:#38383f; --sel:#2b3f55;}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);overscroll-behavior:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input{font:inherit;color:inherit}
+.hidden{display:none!important}
+
+/* ---------- Auth ---------- */
+#auth{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px;
+  background:linear-gradient(160deg,var(--accent),#3d0a5c)}
+.card{width:100%;max-width:380px;background:var(--bg);border-radius:18px;padding:28px 24px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.logo{width:56px;height:56px;border-radius:14px;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:28px;margin:0 auto 12px}
+.card h1{text-align:center;margin:0 0 4px;font-size:22px}
+.card p.sub{text-align:center;margin:0 0 20px;color:var(--muted);font-size:14px}
+.tabs{display:flex;background:var(--bg2);border-radius:10px;padding:3px;margin-bottom:16px}
+.tabs button{flex:1;padding:9px;border-radius:8px;font-weight:600;color:var(--muted)}
+.tabs button.on{background:var(--bg);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.card label{display:block;font-size:13px;font-weight:600;margin:12px 0 5px}
+.card input{width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg);font-size:16px}
+.card input:focus{outline:2px solid var(--accent);border-color:transparent}
+.primary{width:100%;margin-top:18px;padding:14px;background:var(--accent);color:#fff;border-radius:10px;font-weight:700}
+.primary:active{opacity:.85}
+.primary:disabled{opacity:.5}
+#authErr{color:var(--danger);font-size:13px;min-height:18px;margin-top:10px;text-align:center}
+.note{font-size:11.5px;color:var(--muted);text-align:center;margin-top:12px;line-height:1.4}
+
+/* ---------- App layout ---------- */
+#app{height:100%;display:grid;grid-template-columns:260px 300px 1fr;overflow:hidden}
+.col{display:flex;flex-direction:column;min-height:0;min-width:0;background:var(--bg)}
+.col-nav{background:var(--bg2);border-right:1px solid var(--line)}
+.col-pages{border-right:1px solid var(--line)}
+.top{display:flex;align-items:center;gap:6px;padding:calc(10px + env(safe-area-inset-top)) 12px 10px;border-bottom:1px solid var(--line);min-height:56px}
+.top h2{margin:0;font-size:17px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who{flex:1;min-width:0;line-height:1.2}
+.who b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who small{font-size:12px;color:var(--muted)}
+.icon{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-size:19px;flex:none}
+.icon:hover,.icon:active{background:var(--bg3)}
+.back{display:none}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px;flex:none}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+.item{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;min-height:46px;border-left:4px solid transparent}
+.item:hover{background:var(--bg3)}
+.item.active{background:var(--sel)}
+.item .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .dot{width:14px;height:14px;border-radius:4px;flex:none}
+.item .more{color:var(--muted);padding:4px 8px;border-radius:6px}
+.sec{padding-left:38px;font-size:15px}
+.add{color:var(--accent);font-weight:600;padding:12px 14px;display:flex;gap:8px;width:100%;text-align:left}
+.add.sub{padding-left:38px;font-size:14px}
+.navfoot{border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom));display:flex;gap:4px}
+.navfoot button{flex:1;padding:10px 6px;font-size:13px;color:var(--muted);border-radius:8px;white-space:nowrap}
+.navfoot button:hover{background:var(--bg3)}
+
+.search{padding:10px 12px;border-bottom:1px solid var(--line)}
+.search input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg2);font-size:15px}
+.page{padding:12px 16px;border-bottom:1px solid var(--line);cursor:pointer}
+.page:hover{background:var(--bg2)}
+.page.active{background:var(--sel)}
+.page b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.page small{display:block;color:var(--muted);font-size:12.5px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crumb{color:var(--accent)!important}
+.empty{padding:40px 24px;text-align:center;color:var(--muted)}
+
+.title-in{flex:1;min-width:0;border:0;background:none;font-size:20px;font-weight:700;padding:6px 4px;font-family:ui-monospace,Menlo,Consolas,monospace}
+.title-in:focus{outline:none}
+.toolbar{display:flex;gap:2px;padding:6px 8px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none;background:var(--bg2);flex:none}
+.toolbar::-webkit-scrollbar{display:none}
+.toolbar button{min-width:40px;height:40px;border-radius:8px;font-size:16px;flex:none;padding:0 8px}
+.toolbar button:active,.toolbar button:hover{background:var(--bg3)}
+.toolbar .sep{width:1px;background:var(--line);margin:6px 4px;flex:none}
+.meta{padding:10px 18px 0;color:var(--muted);font-size:12.5px}
+#editor{flex:1;overflow-y:auto;padding:12px 18px calc(60px + env(safe-area-inset-bottom));outline:none;font-size:16.5px;line-height:1.55;-webkit-overflow-scrolling:touch;word-wrap:break-word}
+#editor h1{font-size:26px;margin:.5em 0 .3em;color:var(--accent)}
+#editor h2{font-size:21px;margin:.5em 0 .3em}
+#editor img{max-width:100%;height:auto;border-radius:8px;margin:8px 0;display:block}
+#editor .todo{display:flex;gap:10px;align-items:flex-start;margin:4px 0}
+#editor .todo input{width:20px;height:20px;margin-top:3px;flex:none;accent-color:var(--accent)}
+#editor .todo.done span{text-decoration:line-through;color:var(--muted)}
+#editor .todo span{flex:1;min-width:0;outline:none}
+.noPage{flex:1;display:grid;place-items:center;color:var(--muted);padding:24px;text-align:center}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,20px);background:#222;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:50;max-width:90%;text-align:center}
+#toast.on{opacity:.92;transform:translate(-50%,0)}
+#loading{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:40;color:var(--muted)}
+
+@media (max-width:899px){
+  #app{display:block;position:relative}
+  .col{position:absolute;inset:0;transform:translateX(100%);transition:transform .25s ease;border:0}
+  .col-nav{transform:translateX(0)}
+  body[data-view="pages"] .col-pages,
+  body[data-view="edit"] .col-pages,
+  body[data-view="edit"] .col-edit{transform:translateX(0)}
+  body[data-view="pages"] .col-edit{transform:translateX(100%)}
+  .back{display:grid}
+  #editor{font-size:17px}
+}
+@media (min-width:900px) and (max-width:1199px){
+  #app{grid-template-columns:230px 260px 1fr}
+}
+</style>
+</head>
+<body data-view="nav">
+
+<div id="loading">Chargement…</div>
+
+<!-- ================= LOGIN ================= -->
+<div id="auth" class="hidden">
+  <form class="card" id="authForm">
+    <div class="logo">📓</div>
+    <h1>Mes Notes</h1>
+    <p class="sub">Synchronisées sur tous vos appareils</p>
+    <div class="tabs">
+      <button type="button" id="tabLogin" class="on">Connexion</button>
+      <button type="button" id="tabReg">Créer un compte</button>
+    </div>
+    <label for="u">Nom d'utilisateur</label>
+    <input id="u" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" required minlength="3">
+    <label for="p">Mot de passe</label>
+    <input id="p" name="password" type="password" autocomplete="current-password" required minlength="6">
+    <div id="p2wrap" class="hidden">
+      <label for="p2">Confirmer le mot de passe</label>
+      <input id="p2" type="password" autocomplete="new-password">
+    </div>
+    <button class="primary" id="authBtn" type="submit">Se connecter</button>
+    <div id="authErr"></div>
+    <div class="note">☁ Vos notes sont stockées de façon privée sur Firebase et accessibles uniquement avec votre compte.</div>
+  </form>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app" class="hidden">
+  <section class="col col-nav">
+    <div class="top">
+      <div class="avatar" id="avatar">?</div>
+      <div class="who"><b id="userName">Utilisateur</b><small id="sync">…</small></div>
+      <button class="icon" id="btnLogout" title="Se déconnecter" aria-label="Se déconnecter">⎋</button>
+    </div>
+    <div class="scroll" id="nav"></div>
+    <div class="navfoot"><button id="btnExport">⬇ Exporter une sauvegarde (JSON)</button></div>
+  </section>
+
+  <section class="col col-pages">
+    <div class="top">
+      <button class="icon back" id="backNav" aria-label="Retour">‹</button>
+      <h2 id="secTitle">Pages</h2>
+      <button class="icon" id="btnAddPage" title="Nouvelle page" aria-label="Nouvelle page">＋</button>
+    </div>
+    <div class="search"><input id="q" type="search" placeholder="🔍 Rechercher dans mes notes"></div>
+    <div class="scroll" id="pages"></div>
+  </section>
+
+  <section class="col col-edit">
+    <div class="top">
+      <button class="icon back" id="backPages" aria-label="Retour">‹</button>
+      <input class="title-in" id="title" placeholder="Titre de la page" maxlength="120">
+      <button class="icon" id="btnDelPage" title="Supprimer la page" aria-label="Supprimer">🗑</button>
+    </div>
+    <div class="toolbar" id="toolbar">
+      <button data-cmd="h1" title="Titre"><b>H1</b></button>
+      <button data-cmd="h2" title="Sous-titre"><b>H2</b></button>
+      <span class="sep"></span>
+      <button data-cmd="bold"><b>B</b></button>
+      <button data-cmd="italic"><i>I</i></button>
+      <button data-cmd="underline"><u>U</u></button>
+      <button data-cmd="mark" title="Surligner">🖍</button>
+      <span class="sep"></span>
+      <button data-cmd="ul" title="Liste à puces">• ≡</button>
+      <button data-cmd="ol" title="Liste numérotée">1.≡</button>
+      <button data-cmd="todo" title="Case à cocher">☑</button>
+      <span class="sep"></span>
+      <button data-cmd="img" title="Insérer une image">🖼</button>
+      <button data-cmd="clear" title="Effacer le format">⌫</button>
+      <input type="file" id="fileImg" accept="image/*" class="hidden">
+    </div>
+    <div class="meta" id="meta"></div>
+    <div id="editor" contenteditable="true" spellcheck="true"></div>
+    <div class="noPage hidden" id="noPage">Sélectionnez ou créez une page<br>pour commencer à écrire ✍️</div>
+  </section>
+</div>
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut }
+  from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+         doc, collection, setDoc, deleteDoc, onSnapshot, writeBatch }
+  from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+/* =====================================================================
+   1) COLLEZ ICI LA CONFIGURATION DE VOTRE PROJET FIREBASE
+      (Console Firebase > Paramètres du projet > Vos applications > Web)
+   ===================================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyCWlhvM6zvmZeiQSuTqE1-VCy0Ugl4Om4Q",
+  authDomain: "note-88311.firebaseapp.com",
+  projectId: "note-88311",
+  storageBucket: "note-88311.firebasestorage.app",
+  messagingSenderId: "972629111443",
+  appId: "1:972629111443:web:791021652b6b8a0ef35366"
+};
+/* ===================================================================== */
+
+const $ = s => document.querySelector(s);
+const uid = () => Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4);
+const COLORS = ["#8b5cf6","#f97316","#10b981","#ef4444","#3b82f6","#eab308","#ec4899","#14b8a6"];
+const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const plain = html => { const d = document.createElement("div"); d.innerHTML = html; return (d.textContent || "").replace(/\s+/g," ").trim(); };
+const fmtDate = t => new Date(t).toLocaleString("fr-FR", { weekday:"long", day:"numeric", month:"long", year:"numeric", hour:"2-digit", minute:"2-digit" });
+const fmtShort = t => { const d = new Date(t), n = new Date(); return d.toDateString() === n.toDateString() ? d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}) : d.toLocaleDateString("fr-FR",{day:"numeric",month:"short"}); };
+let tt; function toast(m){ const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("on"), 2600); }
+const toEmail = n => n.includes("@") ? n : n + "@notes.invalid";   // identifiant -> e-mail technique
+const fromEmail = e => e.replace(/@notes\.invalid$/, "");
+
+/* ---------- Init Firebase ---------- */
+const configured = !firebaseConfig.apiKey.startsWith("VOTRE");
+let auth, db;
+if (configured) {
+  const app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+}
+
+/* ---------- Auth UI ---------- */
+let mode = "login";
+function setMode(m){
+  mode = m;
+  $("#tabLogin").classList.toggle("on", m==="login"); $("#tabReg").classList.toggle("on", m==="reg");
+  $("#p2wrap").classList.toggle("hidden", m==="login");
+  $("#authBtn").textContent = m==="login" ? "Se connecter" : "Créer mon compte";
+  $("#p").autocomplete = m==="login" ? "current-password" : "new-password";
+  $("#authErr").textContent = "";
+}
+$("#tabLogin").onclick = () => setMode("login");
+$("#tabReg").onclick = () => setMode("reg");
+const AUTH_ERR = {
+  "auth/invalid-credential":"Identifiants incorrects.", "auth/wrong-password":"Identifiants incorrects.",
+  "auth/user-not-found":"Identifiants incorrects.", "auth/email-already-in-use":"Ce nom d'utilisateur existe déjà.",
+  "auth/weak-password":"Mot de passe trop faible (6 caractères minimum).", "auth/invalid-email":"Nom d'utilisateur invalide.",
+  "auth/network-request-failed":"Pas de connexion internet.", "auth/too-many-requests":"Trop d'essais, réessayez plus tard.",
+  "auth/operation-not-allowed":"Activez « E-mail/Mot de passe » dans Firebase > Authentication > Sign-in method."
+};
+$("#authForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const err = $("#authErr"), btn = $("#authBtn"); err.textContent = "";
+  if (!configured) return err.textContent = "Firebase n'est pas configuré (voir le début du script).";
+  const name = $("#u").value.trim().toLowerCase(), pw = $("#p").value;
+  if (mode === "reg") {
+    if (!name.includes("@") && !/^[a-z0-9_.-]{3,30}$/.test(name)) return err.textContent = "Nom : 3 à 30 caractères (lettres, chiffres, . _ -).";
+    if (pw !== $("#p2").value) return err.textContent = "Les mots de passe ne correspondent pas.";
+  }
+  btn.disabled = true;
+  try {
+    if (mode === "reg") await createUserWithEmailAndPassword(auth, toEmail(name), pw);
+    else await signInWithEmailAndPassword(auth, toEmail(name), pw);
+  } catch (ex) { err.textContent = AUTH_ERR[ex.code] || ("Erreur : " + (ex.code || ex.message)); }
+  btn.disabled = false;
+});
+$("#btnLogout").onclick = async () => { await flushSave(); await signOut(auth); };
+
+/* ---------- État ---------- */
+let uidUser = null, unsubStruct = null, unsubPages = null;
+let struct = { notebooks: [] };               // [{id,name,color,sections:[{id,name}]}]
+const pages = new Map();                      // id -> {id,nb,sec,title,html,created,updated}
+let sel = { nb: null, sec: null, page: null };
+let view = "nav", query = "", structReady = false, creatingStarter = false;
+const dirty = new Set(); let saveT = null;
+
+const structRef = () => doc(db, "users", uidUser, "meta", "structure");
+const pageRef = id => doc(db, "users", uidUser, "pages", id);
+const curNb = () => struct.notebooks.find(n => n.id === sel.nb);
+const curSec = () => curNb()?.sections.find(s => s.id === sel.sec);
+const curPage = () => pages.get(sel.page);
+const secPages = () => [...pages.values()].filter(p => p.sec === sel.sec);
+const setView = v => { view = v; document.body.dataset.view = v; };
+const saveSel = () => { try { localStorage.setItem("notes.sel." + uidUser, JSON.stringify(sel)); } catch {} };
+
+/* ---------- Écriture ---------- */
+async function saveStruct(){ try { await setDoc(structRef(), struct); } catch (e) { toast("Erreur d'enregistrement : " + e.code); } }
+function queuePage(id){ dirty.add(id); clearTimeout(saveT); saveT = setTimeout(flushSave, 600); }
+async function flushSave(){
+  clearTimeout(saveT);
+  const ids = [...dirty]; dirty.clear();
+  for (const id of ids) {
+    const p = pages.get(id); if (!p) continue;
+    if (JSON.stringify(p).length > 950000) { toast("⚠ Page trop volumineuse (limite 1 Mo) : retirez des images."); continue; }
+    try { await setDoc(pageRef(id), p); } catch (e) { toast("Erreur d'enregistrement : " + (e.code || e.message)); }
+  }
+}
+
+/* ---------- Démarrage / écoute temps réel ---------- */
+function showAuth(){ $("#loading").classList.add("hidden"); $("#app").classList.add("hidden"); $("#auth").classList.remove("hidden");
+  if (!configured) $("#authErr").textContent = "⚙ Firebase non configuré : collez votre firebaseConfig dans le script."; }
+
+function start(user){
+  uidUser = user.uid;
+  $("#userName").textContent = fromEmail(user.email || "Utilisateur");
+  $("#avatar").textContent = fromEmail(user.email || "?").slice(0,2).toUpperCase();
+  try { sel = { ...sel, ...JSON.parse(localStorage.getItem("notes.sel." + uidUser) || "{}") }; } catch {}
+  pages.clear(); structReady = false; setView("nav");
+
+  unsubStruct = onSnapshot(structRef(), snap => {
+    if (!snap.exists()) {
+      if (!snap.metadata.fromCache && !creatingStarter) { creatingStarter = true; createStarter(); }
+      return;
+    }
+    struct = snap.data(); structReady = true;
+    if (!curNb()) sel.nb = struct.notebooks[0]?.id;
+    if (!curSec()) sel.sec = curNb()?.sections[0]?.id;
+    if (!curPage()) sel.page = null;
+    $("#loading").classList.add("hidden"); $("#auth").classList.add("hidden"); $("#app").classList.remove("hidden");
+    renderNav(); renderPages(); if (!sel.page) renderEditor();
+  }, err => toast("Erreur de lecture : " + err.code));
+
+  unsubPages = onSnapshot(collection(db, "users", uidUser, "pages"), { includeMetadataChanges: true }, snap => {
+    let refresh = false;
+    snap.docChanges().forEach(ch => {
+      const id = ch.doc.id;
+      if (ch.type === "removed") { pages.delete(id); if (sel.page === id) { sel.page = null; refresh = true; } }
+      else {
+        pages.set(id, ch.doc.data());
+        const typing = document.activeElement === $("#editor") || document.activeElement === $("#title");
+        if (id === sel.page && !ch.doc.metadata.hasPendingWrites && !typing) refresh = true;
+      }
+    });
+    setSync(snap.metadata.hasPendingWrites, snap.metadata.fromCache);
+    renderNav(); renderPages(); if (refresh) renderEditor();
+  }, err => toast("Erreur de lecture : " + err.code));
+}
+
+async function createStarter(){
+  const now = Date.now(), nb = uid(), sc = uid(), pid = uid();
+  struct = { notebooks: [{ id: nb, name: "Mon carnet", color: COLORS[0], sections: [{ id: sc, name: "Général" }] }] };
+  const p = { id: pid, nb, sec: sc, title: "Bienvenue 👋", created: now, updated: now,
+    html: "<h1>Bienvenue !</h1><p>Vos notes sont synchronisées en direct sur tous vos appareils, même hors-ligne.</p><div class='todo'><input type='checkbox'><span>Essayer une case à cocher</span></div>" };
+  sel = { nb, sec: sc, page: pid };
+  await saveStruct(); await setDoc(pageRef(pid), p); creatingStarter = false;
+}
+function stop(){ unsubStruct?.(); unsubPages?.(); unsubStruct = unsubPages = null; uidUser = null; }
+if (configured) onAuthStateChanged(auth, u => { if (u) start(u); else { stop(); showAuth(); } });
+else showAuth();
+
+function setSync(pending, cache){
+  $("#sync").textContent = !navigator.onLine ? "📴 Hors-ligne (enregistré localement)" : pending ? "⏳ Synchronisation…" : cache ? "☁ Connexion…" : "☁ Synchronisé";
+}
+addEventListener("online", () => setSync(false, false)); addEventListener("offline", () => setSync(true, true));
+
+/* ---------- Rendu ---------- */
+function renderNav(){
+  if (!structReady) return;
+  let h = "";
+  for (const nb of struct.notebooks) {
+    const active = nb.id === sel.nb;
+    h += `<div class="item ${active?"active":""}" data-nb="${nb.id}" style="border-left-color:${nb.color}">
+      <span class="dot" style="background:${nb.color}"></span><span class="nm">${esc(nb.name)}</span>
+      <button class="more" data-menu="nb" data-id="${nb.id}" aria-label="Options">⋯</button></div>`;
+    if (active) {
+      for (const s of nb.sections) {
+        const n = [...pages.values()].filter(p => p.sec === s.id).length;
+        h += `<div class="item sec ${s.id===sel.sec?"active":""}" data-sec="${s.id}">
+        <span class="nm">${esc(s.name)}</span><span style="color:var(--muted);font-size:12px">${n}</span>
+        <button class="more" data-menu="sec" data-id="${s.id}" aria-label="Options">⋯</button></div>`;
+      }
+      h += `<button class="add sub" id="addSec">＋ Nouvelle section</button>`;
+    }
+  }
+  h += `<button class="add" id="addNb">＋ Nouveau carnet</button>`;
+  $("#nav").innerHTML = h;
+}
+function renderPages(){
+  if (!structReady) return;
+  const el = $("#pages"); let list;
+  if (query) {
+    const q = query.toLowerCase();
+    list = [...pages.values()].filter(p => p.title.toLowerCase().includes(q) || plain(p.html).toLowerCase().includes(q));
+    $("#secTitle").textContent = `Résultats (${list.length})`;
+  } else { list = secPages(); $("#secTitle").textContent = curSec()?.name || "Pages"; }
+  if (!list.length) { el.innerHTML = `<div class="empty">${query ? "Aucun résultat." : "Aucune page. Touchez ＋ pour en créer une."}</div>`; return; }
+  list.sort((a,b) => b.updated - a.updated);
+  const crumb = p => { const nb = struct.notebooks.find(n => n.id === p.nb); return `${esc(nb?.name||"?")} › ${esc(nb?.sections.find(s => s.id===p.sec)?.name||"?")}`; };
+  el.innerHTML = list.map(p => `<div class="page ${p.id===sel.page?"active":""}" data-nb="${p.nb}" data-sec="${p.sec}" data-page="${p.id}">
+    ${query ? `<small class="crumb">${crumb(p)}</small>` : ""}
+    <b>${esc(p.title || "Sans titre")}</b><small>${fmtShort(p.updated)} · ${esc(plain(p.html).slice(0,70))}</small></div>`).join("");
+}
+function renderEditor(){
+  const p = curPage(), has = !!p;
+  ["#editor","#toolbar","#meta","#title","#btnDelPage"].forEach(s => $(s).classList.toggle("hidden", !has));
+  $("#noPage").classList.toggle("hidden", has);
+  if (!has) return;
+  $("#title").value = p.title; $("#editor").innerHTML = p.html; $("#meta").textContent = fmtDate(p.updated);
+}
+
+/* ---------- Navigation / actions ---------- */
+$("#nav").addEventListener("click", e => {
+  const more = e.target.closest("[data-menu]");
+  if (more) { e.stopPropagation(); return menu(more.dataset.menu, more.dataset.id); }
+  if (e.target.closest("#addNb")) return addNb();
+  if (e.target.closest("#addSec")) return addSec();
+  const nbEl = e.target.closest("[data-nb]"), secEl = e.target.closest("[data-sec]");
+  if (secEl) { flushSave(); sel.sec = secEl.dataset.sec; sel.page = null; query = ""; $("#q").value = ""; saveSel(); renderNav(); renderPages(); renderEditor(); setView("pages"); }
+  else if (nbEl) { flushSave(); sel.nb = nbEl.dataset.nb; sel.sec = curNb().sections[0]?.id; sel.page = null; saveSel(); renderNav(); renderPages(); renderEditor(); }
+});
+async function addNb(){
+  const name = prompt("Nom du nouveau carnet :"); if (!name?.trim()) return;
+  const nb = { id: uid(), name: name.trim(), color: COLORS[struct.notebooks.length % COLORS.length], sections: [{ id: uid(), name: "Général" }] };
+  struct.notebooks.push(nb); sel = { nb: nb.id, sec: nb.sections[0].id, page: null }; saveSel(); renderAll(); await saveStruct();
+}
+async function addSec(){
+  const name = prompt("Nom de la nouvelle section :"); if (!name?.trim()) return;
+  const s = { id: uid(), name: name.trim() };
+  curNb().sections.push(s); sel.sec = s.id; sel.page = null; saveSel(); renderAll(); setView("pages"); await saveStruct();
+}
+function renderAll(){ renderNav(); renderPages(); renderEditor(); }
+async function menu(type, id){
+  const list = type === "nb" ? struct.notebooks : curNb().sections;
+  const it = list.find(x => x.id === id); if (!it) return;
+  const c = prompt(`« ${it.name} »\n\nTapez 1 pour renommer, 2 pour supprimer :`);
+  if (c === "1") { const n = prompt("Nouveau nom :", it.name); if (n?.trim()) { it.name = n.trim(); renderAll(); await saveStruct(); } }
+  else if (c === "2") {
+    if (list.length === 1) return alert(type === "nb" ? "Gardez au moins un carnet." : "Gardez au moins une section.");
+    if (!confirm(`Supprimer « ${it.name} » et tout son contenu ?`)) return;
+    const doomed = [...pages.values()].filter(p => type === "nb" ? p.nb === id : p.sec === id);
+    const batch = writeBatch(db); doomed.forEach(p => { batch.delete(pageRef(p.id)); pages.delete(p.id); dirty.delete(p.id); });
+    list.splice(list.indexOf(it), 1);
+    if (type === "nb") { sel = { nb: struct.notebooks[0].id, sec: struct.notebooks[0].sections[0].id, page: null }; }
+    else { sel.sec = list[0].id; sel.page = null; }
+    saveSel(); renderAll();
+    try { await batch.commit(); await saveStruct(); } catch (e) { toast("Erreur : " + e.code); }
+  }
+}
+$("#btnAddPage").onclick = () => {
+  if (!curSec()) return;
+  const now = Date.now(), p = { id: uid(), nb: sel.nb, sec: sel.sec, title: "", html: "", created: now, updated: now };
+  pages.set(p.id, p); sel.page = p.id; query = ""; $("#q").value = ""; saveSel(); queuePage(p.id);
+  renderAll(); setView("edit"); setTimeout(() => $("#title").focus(), 300);
+};
+$("#pages").addEventListener("click", e => {
+  const el = e.target.closest("[data-page]"); if (!el) return;
+  flushSave(); sel = { nb: el.dataset.nb, sec: el.dataset.sec, page: el.dataset.page }; saveSel();
+  renderNav(); renderPages(); renderEditor(); setView("edit");
+});
+$("#btnDelPage").onclick = async () => {
+  const p = curPage(); if (!p || !confirm("Supprimer cette page ?")) return;
+  pages.delete(p.id); dirty.delete(p.id); sel.page = null; renderAll(); setView("pages");
+  try { await deleteDoc(pageRef(p.id)); } catch (e) { toast("Erreur : " + e.code); }
+};
+$("#backNav").onclick = () => setView("nav");
+$("#backPages").onclick = () => { flushSave(); setView("pages"); renderPages(); };
+$("#q").addEventListener("input", e => { query = e.target.value.trim(); renderPages(); });
+
+/* ---------- Éditeur ---------- */
+function touch(){
+  const p = curPage(); if (!p) return;
+  p.html = $("#editor").innerHTML; p.title = $("#title").value; p.updated = Date.now();
+  $("#meta").textContent = fmtDate(p.updated); queuePage(p.id);
+}
+let listT; const refreshLists = () => { clearTimeout(listT); listT = setTimeout(() => { renderPages(); renderNav(); }, 500); };
+$("#editor").addEventListener("input", () => { touch(); refreshLists(); });
+$("#title").addEventListener("input", () => { touch(); refreshLists(); });
+$("#title").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $("#editor").focus(); } });
+$("#editor").addEventListener("change", e => {
+  if (e.target.type === "checkbox") {
+    e.target.toggleAttribute("checked", e.target.checked);
+    e.target.closest(".todo")?.classList.toggle("done", e.target.checked); touch();
+  }
+});
+$("#editor").addEventListener("keydown", e => {
+  if (e.key !== "Enter") return;
+  const sp = getSelection().anchorNode?.parentElement?.closest(".todo span");
+  if (sp) { e.preventDefault(); insertTodo(sp.closest(".todo")); }
+});
+function insertTodo(after){
+  const d = document.createElement("div"); d.className = "todo";
+  d.innerHTML = '<input type="checkbox"><span>&#8203;</span>';
+  const ed = $("#editor");
+  if (after) after.after(d); else {
+    const node = getSelection().anchorNode && ed.contains(getSelection().anchorNode) ? getSelection().anchorNode : null;
+    const blk = node && (node.nodeType === 3 ? node.parentElement : node).closest("#editor > *");
+    blk ? blk.after(d) : ed.append(d);
+  }
+  const r = document.createRange(); r.selectNodeContents(d.querySelector("span")); r.collapse(false);
+  const s = getSelection(); s.removeAllRanges(); s.addRange(r); touch();
+}
+$("#toolbar").addEventListener("mousedown", e => e.preventDefault());
+$("#toolbar").addEventListener("click", e => {
+  const b = e.target.closest("[data-cmd]"); if (!b) return;
+  const ed = $("#editor"), c = b.dataset.cmd;
+  if (!ed.contains(getSelection().anchorNode)) ed.focus();
+  switch (c) {
+    case "h1": case "h2": { const cur = document.queryCommandValue("formatBlock").toLowerCase(); document.execCommand("formatBlock", false, cur === c ? "p" : c); break; }
+    case "mark": document.execCommand("hiliteColor", false, "#fff17a"); break;
+    case "ul": document.execCommand("insertUnorderedList"); break;
+    case "ol": document.execCommand("insertOrderedList"); break;
+    case "todo": insertTodo(); break;
+    case "img": $("#fileImg").click(); return;
+    case "clear": document.execCommand("removeFormat"); document.execCommand("formatBlock", false, "p"); break;
+    default: document.execCommand(c);
+  }
+  touch();
+});
+$("#fileImg").addEventListener("change", e => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  const img = new Image(), url = URL.createObjectURL(f);
+  img.onload = () => {
+    const k = Math.min(1, 900 / Math.max(img.width, img.height));
+    const cv = document.createElement("canvas"); cv.width = img.width * k; cv.height = img.height * k;
+    cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height); URL.revokeObjectURL(url);
+    $("#editor").focus(); document.execCommand("insertImage", false, cv.toDataURL("image/jpeg", .7)); touch();
+  };
+  img.src = url;
+});
+
+/* ---------- Sauvegarde JSON ---------- */
+$("#btnExport").onclick = () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify({ struct, pages: [...pages.values()] }, null, 1)], { type: "application/json" }));
+  a.download = `notes-${new Date().toISOString().slice(0,10)}.json`; a.click();
+};
+addEventListener("visibilitychange", () => { if (document.hidden) flushSave(); });
+</script>
+</body>
+</html>
