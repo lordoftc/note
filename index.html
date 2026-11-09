@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#7719aa">
-<script>try{var t=localStorage.getItem("notes.theme");if(/^(light|dark|soft)$/.test(t))document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<script>try{var t=localStorage.getItem("notes.theme");if(/^(light|dark|soft|night|coffee|slate)$/.test(t))document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <title>Mes Notes</title>
 <style>
 /* Thèmes : clair (défaut) · sombre · sombre doux · automatique (sans data-theme = suit l'appareil) */
@@ -26,6 +26,27 @@
   --text:#c8ccd6; --muted:#8a92a2; --line:#3a3e4a; --sel:#35445c; --danger:#e0908a;
   --on-accent:#1d1830; --mark-bg:#6e6a3a; --mark-fg:#f0ecd0; --grad:#2b2642; --shadow:rgba(0,0,0,.45);
 }
+/* Nuit bleue : palette #010736 · #0D1C42 · #22396F · #FCF1D0 */
+:root[data-theme="night"]{
+  color-scheme:dark;
+  --accent:#FCF1D0; --accent-soft:#1a2c5a; --bg:#0D1C42; --bg2:#010736; --bg3:#22396F;
+  --text:#FCF1D0; --muted:#a9a79f; --line:#22396F; --sel:#22396F; --danger:#ff8a80;
+  --on-accent:#010736; --mark-bg:#FCF1D0; --mark-fg:#010736; --grad0:#22396F; --grad:#010736; --shadow:rgba(0,0,0,.6);
+}
+/* Café : palette #000000 · #1F150C · #412D15 · #E1DCC9 */
+:root[data-theme="coffee"]{
+  color-scheme:dark;
+  --accent:#E1DCC9; --accent-soft:#2e2011; --bg:#1F150C; --bg2:#000000; --bg3:#412D15;
+  --text:#E1DCC9; --muted:#979081; --line:#412D15; --sel:#412D15; --danger:#f08a6c;
+  --on-accent:#000000; --mark-bg:#E1DCC9; --mark-fg:#000000; --grad0:#412D15; --grad:#000000; --shadow:rgba(0,0,0,.7);
+}
+/* Ardoise : palette #222831 · #393E46 · #948979 · #DFD0B8 */
+:root[data-theme="slate"]{
+  color-scheme:dark;
+  --accent:#DFD0B8; --accent-soft:#3a3f45; --bg:#222831; --bg2:#393E46; --bg3:#4a505a;
+  --text:#DFD0B8; --muted:#948979; --line:#4a505a; --sel:#4a505a; --danger:#e8907f;
+  --on-accent:#222831; --mark-bg:#DFD0B8; --mark-fg:#222831; --grad0:#948979; --grad:#222831; --shadow:rgba(0,0,0,.55);
+}
 @media (prefers-color-scheme:dark){
   :root:not([data-theme]){
     color-scheme:dark;
@@ -43,7 +64,7 @@ input{font:inherit;color:inherit}
 
 /* ---------- Auth ---------- */
 #auth{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px;
-  background:linear-gradient(160deg,var(--accent),var(--grad))}
+  background:linear-gradient(160deg,var(--grad0,var(--accent)),var(--grad))}
 .card{width:100%;max-width:380px;background:var(--bg);border-radius:18px;padding:28px 24px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
 .logo{width:56px;height:56px;border-radius:14px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:28px;margin:0 auto 12px}
 .card h1{text-align:center;margin:0 0 4px;font-size:22px}
@@ -184,6 +205,15 @@ input{font:inherit;color:inherit}
 .badge .pr{font-size:11.5px;color:var(--muted);margin-top:2px}
 .badge.on{border-color:var(--accent);background:var(--accent-soft)}
 .badge.on .bi{filter:none;opacity:1}
+.badge.secret{border-style:dashed;background:transparent}
+.badge.secret .bi{filter:none;opacity:.55}
+.lvl-t small.nx{margin:8px 0 0}
+.ranks{display:flex;flex-wrap:wrap;gap:6px}
+.rk{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:20px;border:1px solid var(--line);background:var(--bg2);color:var(--muted);font-size:13px}
+.rk small{font-size:11px;opacity:.75}
+.rk.on{background:var(--accent-soft);border-color:var(--accent);color:var(--text)}
+.rk.cur{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.toolbar button svg{display:block;margin:auto}
 #achToast{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;width:max-content;transform:translate(-50%,-160%);z-index:70;display:flex;gap:12px;align-items:center;background:var(--bg);color:var(--text);border:2px solid var(--accent);border-radius:16px;padding:10px 18px;box-shadow:0 10px 30px var(--shadow);transition:transform .45s cubic-bezier(.2,1.2,.4,1);max-width:92%;pointer-events:none}
 #achToast.on{transform:translate(-50%,0)}
 #achToast .ti{font-size:30px}
@@ -287,7 +317,7 @@ input{font:inherit;color:inherit}
       <button data-cmd="ol" title="Liste numérotée">1.≡</button>
       <button data-cmd="todo" title="Case à cocher">☑</button>
       <span class="sep"></span>
-      <button data-cmd="img" title="Insérer une image">🖼</button>
+      <button data-cmd="img" title="Insérer une image" aria-label="Insérer une image"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg></button>
       <button data-cmd="quote" title="Citation">❝</button>
       <button data-cmd="code" title="Code"><b>&lt;/&gt;</b></button>
       <button data-cmd="clear" title="Effacer le format">⌫</button>
@@ -454,7 +484,7 @@ function start(user){
   $("#avatar").textContent = fromEmail(user.email || "?").slice(0,2).toUpperCase();
   try { sel = { ...sel, ...JSON.parse(localStorage.getItem("notes.sel." + uidUser) || "{}") }; } catch {}
   pages.clear(); structReady = false; setView("nav");
-  stats = null; statsDirty = false; lastLevel = 0; pagesSynced = false; renderAchBtn();
+  stats = null; statsDirty = false; lastLevel = 0; lastRank = -1; pagesSynced = false; renderAchBtn();
 
   unsubStruct = onSnapshot(structRef(), snap => {
     if (!snap.exists()) {
@@ -922,7 +952,11 @@ $("#editor").addEventListener("change", e => {
   if (e.target.type === "checkbox") {
     e.target.toggleAttribute("checked", e.target.checked);
     e.target.closest(".todo")?.classList.toggle("done", e.target.checked); touch();
-    if (e.target.checked) bump("tasks");
+    if (e.target.checked) {
+      bump("tasks");
+      const bx = [...$("#editor").querySelectorAll(".todo input")];                  // succès secret : liste de 3 tâches ou plus entièrement cochée
+      if (bx.length >= 3 && bx.every(x => x.checked)) bump("listsDone");
+    }
   }
 });
 $("#editor").addEventListener("keydown", e => {
@@ -1005,9 +1039,12 @@ const THEMES = [
   ["auto",  "Automatique", "Suit le réglage de l'appareil",     "linear-gradient(135deg,#fff 50%,#1b1b1f 50%)"],
   ["light", "Clair",       "Fond blanc, texte sombre",           "linear-gradient(135deg,#fff 50%,#7719aa 50%)"],
   ["dark",  "Sombre",      "Fond noir, contraste élevé",         "linear-gradient(135deg,#1b1b1f 50%,#b36ae0 50%)"],
-  ["soft",  "Sombre doux", "Gris-bleu, couleurs adoucies",       "linear-gradient(135deg,#262932 50%,#a590dc 50%)"]
+  ["soft",  "Sombre doux", "Gris-bleu, couleurs adoucies",       "linear-gradient(135deg,#262932 50%,#a590dc 50%)"],
+  ["night", "Nuit bleue",   "Bleu nuit et crème",                "linear-gradient(135deg,#0D1C42 50%,#FCF1D0 50%)"],
+  ["coffee", "Café",        "Noir, brun et crème",               "linear-gradient(135deg,#1F150C 50%,#E1DCC9 50%)"],
+  ["slate", "Ardoise",      "Gris ardoise et sable",             "linear-gradient(135deg,#222831 50%,#DFD0B8 50%)"]
 ];
-const curTheme = () => { try { const t = localStorage.getItem("notes.theme"); return /^(light|dark|soft)$/.test(t) ? t : "auto"; } catch { return "auto"; } };
+const curTheme = () => { try { const t = localStorage.getItem("notes.theme"); return /^(light|dark|soft|night|coffee|slate)$/.test(t) ? t : "auto"; } catch { return "auto"; } };
 function syncThemeColor(){
   const c = getComputedStyle(document.documentElement).getPropertyValue("--bg2").trim();
   if (c) $('meta[name="theme-color"]').content = c;
@@ -1017,6 +1054,7 @@ function applyTheme(t){
   if (t === "auto") r.removeAttribute("data-theme"); else r.setAttribute("data-theme", t);
   try { if (t === "auto") localStorage.removeItem("notes.theme"); else localStorage.setItem("notes.theme", t); } catch {}
   syncThemeColor();
+  if (stats && t !== "auto" && !(stats.themes || {})[t]) { stats.themes = { ...(stats.themes || {}), [t]: 1 }; statsChanged(); }   // succès secret « Caméléon »
 }
 matchMedia("(prefers-color-scheme:dark)").addEventListener("change", syncThemeColor);
 syncThemeColor();
@@ -1048,10 +1086,11 @@ $("#btnAch").onclick = () => openModal("ach", "🏆 Succès");
    au même rythme que les notes (60 s, Ctrl+S).
    ============================================================ */
 const READ_MS = 8000, DAY_WORDS = 100, DAY_READS = 2;
-let stats = null, statsDirty = false, unsubStats = null, lastEdit = 0, lastLevel = 0, pagesSynced = false;
+let stats = null, statsDirty = false, unsubStats = null, lastEdit = 0, lastLevel = 0, lastRank = -1, pagesSynced = false;
 let wcT = null, wcBase = 0, wcFor = null, readT = null, readFor = null, readOpen = 0, checkT = null;
 const statsRef = () => doc(db, "users", uidUser, "meta", "stats");
 const newStats = () => ({ words:0, reads:0, oldReads:0, tasks:0, images:0, nightWords:0, activeDays:0, streak:0, bestStreak:0,
+  earlyWords:0, festive:0, comebacks:0, listsDone:0, ancientReads:0, themes:{},
   lastDay:"", bestDayWords:0, bestDayReads:0, day:{ d:"", words:0, reads:0 }, readPages:{}, unlocked:{} });
 const pad2 = n => String(n).padStart(2, "0");
 const dayStr = d => d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
@@ -1071,8 +1110,9 @@ const curStreak = () => stats && (stats.lastDay === today() || stats.lastDay ===
 /* fusion avec la version d'un autre appareil : on ne perd jamais de progression */
 function mergeStats(a, b){
   const r = { ...a };
-  for (const k of ["words","reads","oldReads","tasks","images","nightWords","activeDays","bestStreak","bestDayWords","bestDayReads"]) r[k] = Math.max(a[k] || 0, b[k] || 0);
+  for (const k of ["words","reads","oldReads","tasks","images","nightWords","activeDays","bestStreak","bestDayWords","bestDayReads","earlyWords","festive","comebacks","listsDone","ancientReads"]) r[k] = Math.max(a[k] || 0, b[k] || 0);
   r.unlocked = { ...b.unlocked, ...a.unlocked };
+  r.themes = { ...b.themes, ...a.themes };
   r.readPages = { ...b.readPages };
   for (const [id, e] of Object.entries(a.readPages || {})) {
     const o = r.readPages[id];
@@ -1090,6 +1130,10 @@ function mergeStats(a, b){
 const dayObj = () => { const d = today(); if (stats.day.d !== d) stats.day = { d, words:0, reads:0 }; return stats.day; };
 function activity(){
   const d = today(); if (stats.lastDay === d) return;
+  const gap = stats.lastDay ? Math.round((Date.parse(d) - Date.parse(stats.lastDay)) / 864e5) : 0;
+  if (gap >= 7) stats.comebacks++;                                   // succès secret : revenir après une semaine d'absence
+  const n = new Date();
+  if ((n.getMonth() === 11 && n.getDate() === 25) || (n.getMonth() === 0 && n.getDate() === 1)) stats.festive++;
   stats.activeDays++; stats.streak = stats.lastDay === prevDay(d) ? stats.streak + 1 : 1;
   stats.bestStreak = Math.max(stats.bestStreak, stats.streak); stats.lastDay = d;
 }
@@ -1098,7 +1142,8 @@ function bump(k){ if (!stats) return; stats[k]++; activity(); statsChanged(); }
 function addWords(n){
   if (!stats || n <= 0) return;
   const dd = dayObj(); stats.words += n; dd.words += n; stats.bestDayWords = Math.max(stats.bestDayWords, dd.words);
-  if (new Date().getHours() < 5) stats.nightWords += n;
+  const hr = new Date().getHours();
+  if (hr < 5) stats.nightWords += n; else if (hr < 7) stats.earlyWords += n;
   activity(); statsChanged();
 }
 function registerRead(p){
@@ -1108,6 +1153,7 @@ function registerRead(p){
   stats.readPages[p.id] = { d, n: e.n + 1 }; stats.reads++;
   const dd = dayObj(); dd.reads++; stats.bestDayReads = Math.max(stats.bestDayReads, dd.reads);
   if (p.created && Date.now() - p.created > 30 * 864e5) stats.oldReads++;
+  if (p.created && Date.now() - p.created > 90 * 864e5) stats.ancientReads++;
   activity(); statsChanged();
 }
 
@@ -1138,16 +1184,26 @@ function watchRead(){
 }
 
 /* niveaux */
-const LEVELS = ["Novice","Apprenti","Scribe","Chroniqueur","Érudit","Maître des notes","Archiviste","Sage","Légende"];
+/* titres : déterminés par le NOMBRE DE SUCCÈS débloqués (seuil, icône, nom) */
+const RANKS = [[0,"🌱","Apprenti"],[3,"📘","Initié"],[6,"✒️","Scribe"],[10,"📜","Chroniqueur"],[14,"🎓","Érudit"],[18,"🏛️","Archiviste"],[23,"🦉","Sage"],[28,"👑","Maître"]];
+const unlockedCount = () => ACH.filter(a => stats.unlocked[a.id]).length;
+function rankOf(n){
+  const total = ACH.length;
+  if (n >= total) return { i: RANKS.length, ico: "💎", t: "Grand Maître", from: total, next: null };
+  let i = 0; while (i + 1 < RANKS.length && n >= RANKS[i + 1][0]) i++;
+  const nx = RANKS[i + 1] ? { at: RANKS[i + 1][0], t: RANKS[i + 1][2] } : { at: total, t: "Grand Maître" };
+  return { i, ico: RANKS[i][1], t: RANKS[i][2], from: RANKS[i][0], next: nx };
+}
 const xpOf = () => liveNotes() * 20 + Math.floor(stats.words / 20) + stats.reads * 10 + stats.tasks * 3 + stats.activeDays * 15 + Object.keys(stats.unlocked).length * 50;
-const levelOf = xp => { const L = Math.floor(Math.sqrt(xp / 50)) + 1; return { L, from: 50 * (L - 1) ** 2, to: 50 * L ** 2, t: LEVELS[Math.min(L - 1, LEVELS.length - 1)] }; };
-function renderAchBtn(){ $("#btnAch").textContent = stats ? "🏆 Niv. " + levelOf(xpOf()).L : "🏆 Succès"; }
+const levelOf = xp => { const L = Math.floor(Math.sqrt(xp / 50)) + 1; return { L, from: 50 * (L - 1) ** 2, to: 50 * L ** 2 }; };
+function renderAchBtn(){ $("#btnAch").textContent = stats ? "🏆 " + rankOf(unlockedCount()).t : "🏆 Succès"; }
 
 /* liste des succès : [id, catégorie, icône, nom, description, objectif, valeur actuelle] */
-const A = (id, c, i, n, d, g, v) => ({ id, c, i, n, d, g, v });
+const A = (id, c, i, n, d, g, v, hint) => ({ id, c, i, n, d, g, v, h: !!hint, hint });
 const secCount = () => struct.notebooks.reduce((n, b) => n + b.sections.length, 0);
 const readLive = () => { if (!pagesSynced) return 0; let n = 0; for (const p of pages.values()) if (pwords(p) >= 3 && stats.readPages[p.id]) n++; return n; };
-const CATS = { w:"✍️ Écriture", r:"👀 Relecture", s:"🔥 Régularité", o:"🗂️ Organisation" };
+const CATS = { w:"✍️ Écriture", r:"👀 Relecture", s:"🔥 Régularité", o:"🗂️ Organisation", x:"🕵️ Secrets" };
+const maxNoteWords = () => { let m = 0; for (const p of pages.values()) m = Math.max(m, pwords(p)); return m; };
 const ACH = [
   A("n1",   "w","✍️","Première note",       "Écrire une note",                     1,      () => liveNotes()),
   A("n10",  "w","📝","Carnet bien rempli",  "Avoir 10 notes",                      10,     () => liveNotes()),
@@ -1160,7 +1216,7 @@ const ACH = [
   A("day500","w","⚡","Journée productive","Écrire 500 mots en un jour",           500,    () => stats.bestDayWords),
   A("t10",  "w","✅","Fait !",              "Cocher 10 tâches",                    10,     () => stats.tasks),
   A("t50",  "w","🎯","Chasseur de tâches",  "Cocher 50 tâches",                    50,     () => stats.tasks),
-  A("img1", "w","🖼️","Illustrateur",        "Ajouter une image à une note",        1,      () => stats.images),
+  A("img1", "w","📷","Illustrateur",        "Ajouter une image à une note",        1,      () => stats.images),
   A("r1",   "r","👀","Première relecture",  "Relire une note",                     1,      () => stats.reads),
   A("r10",  "r","🔍","Lecteur attentif",    "Faire 10 relectures",                 10,     () => stats.reads),
   A("r50",  "r","🐘","Mémoire d'éléphant",  "Faire 50 relectures",                 50,     () => stats.reads),
@@ -1173,7 +1229,16 @@ const ACH = [
   A("s30",  "s","🌟","Mois de feu",         "30 jours d'affilée",                  30,     () => stats.bestStreak),
   A("night","s","🌙","Noctambule",          "Écrire 100 mots entre minuit et 5 h", 100,    () => stats.nightWords),
   A("nb3",  "o","🗂️","Organisé",            "Avoir 3 carnets",                     3,      () => struct.notebooks.length),
-  A("sec6", "o","📂","Bien rangé",          "Avoir 6 sections en tout",            6,      secCount)
+  A("sec6", "o","📂","Bien rangé",          "Avoir 6 sections en tout",            6,      secCount),
+  /* --- Succès secrets : nom et conditions cachés tant qu'ils ne sont pas débloqués --- */
+  A("early",    "x","🌅","Lève-tôt",            "Écrire 50 mots entre 5 h et 7 h",                          50,   () => stats.earlyWords,   "Le monde appartient à ceux qui se lèvent tôt."),
+  A("xmas",     "x","🎄","Esprit de fête",      "Écrire ou relire un 25 décembre ou un 1er janvier",        1,    () => stats.festive,      "Certains jours ne ressemblent à aucun autre."),
+  A("back",     "x","🔙","Le grand retour",     "Revenir après 7 jours d'absence",                          1,    () => stats.comebacks,    "On finit toujours par revenir."),
+  A("lists",    "x","🎉","Liste bouclée",       "Cocher toutes les cases d'une liste de 3 tâches ou plus",  1,    () => stats.listsDone,    "Tout cocher : quelle satisfaction."),
+  A("cham",     "x","🦎","Caméléon",            "Essayer tous les thèmes",                                  6,    () => Object.keys(stats.themes || {}).length, "Changer de peau, encore et encore."),
+  A("marathon", "x","🏃","Rat de bibliothèque", "Relire 10 notes en un jour",                               10,   () => stats.bestDayReads, "Une vraie soirée lecture."),
+  A("giant",    "x","📜","Pavé",                "Écrire une note de plus de 1 000 mots",                    1000, maxNoteWords,             "Parfois, il faut du souffle."),
+  A("ancient",  "x","⏳","Souvenirs lointains", "Relire une note vieille de plus de 90 jours",              1,    () => stats.ancientReads, "Le passé garde ses secrets.")
 ];
 const goalOf = a => typeof a.g === "function" ? a.g() : a.g;
 
@@ -1197,21 +1262,26 @@ function checkAch(){
   const out = [];
   for (const a of ACH) {
     if (stats.unlocked[a.id]) continue;
-    if (a.v() >= goalOf(a)) { stats.unlocked[a.id] = Date.now(); out.push({ k:"Succès débloqué", i:a.i, n:a.n }); }
+    if (a.v() >= goalOf(a)) { stats.unlocked[a.id] = Date.now(); out.push({ k: a.h ? "Succès secret débloqué" : "Succès débloqué", i:a.i, n:a.n }); }
   }
   const dd = stats.day.d === today() ? stats.day : null;
   if (dd && !dd.gw && dd.words >= DAY_WORDS) { dd.gw = 1; out.push({ k:"Objectif du jour", i:"🎯", n: DAY_WORDS + " mots écrits !" }); }
   if (dd && !dd.gr && dd.reads >= DAY_READS) { dd.gr = 1; out.push({ k:"Objectif du jour", i:"🎯", n: DAY_READS + " notes relues !" }); }
   if (out.length) { statsDirty = true; scheduleSave(); announce(out); }
+  const rk = rankOf(unlockedCount());
+  if (lastRank >= 0 && rk.i > lastRank) announce([{ k:"Nouveau titre", i:rk.ico, n:rk.t }]);
+  lastRank = rk.i;
   const lv = levelOf(xpOf()).L;
-  if (lastLevel && lv > lastLevel) announce([{ k:"Niveau supérieur", i:"⬆️", n:"Niveau " + lv + " · " + levelOf(xpOf()).t }]);
+  if (lastLevel && lv > lastLevel) announce([{ k:"Niveau supérieur", i:"⬆️", n:"Niveau " + lv }]);
   lastLevel = lv;
   renderAchBtn(); if (modalKind === "ach") renderAch();
 }
 
 /* panneau Succès */
 function badgeHtml(a){
-  const ok = stats.unlocked[a.id], g = goalOf(a), v = Math.min(a.v(), g);
+  const ok = stats.unlocked[a.id];
+  if (a.h && !ok) return `<div class="badge secret"><span class="bi">❓</span><b>Succès secret</b><small>${a.hint}</small><span class="pr">🔒 À découvrir</span></div>`;
+  const g = goalOf(a), v = Math.min(a.v(), g);
   return `<div class="badge ${ok ? "on" : ""}"><span class="bi">${a.i}</span><b>${a.n}</b><small>${a.d}</small>` +
     (ok ? `<span class="pr">✔ ${new Date(ok).toLocaleDateString("fr-FR", { day:"numeric", month:"short", year:"numeric" })}</span>`
         : `<div class="bar"><i style="width:${Math.round(v / g * 100)}%"></i></div><span class="pr">${fmtN(v)} / ${fmtN(g)}</span>`) + `</div>`;
@@ -1219,18 +1289,22 @@ function badgeHtml(a){
 function renderAch(){
   const b = $("#mBody");
   if (!stats) { b.innerHTML = '<div class="empty">Chargement de vos statistiques…</div>'; return; }
-  const xp = xpOf(), lv = levelOf(xp), pct = Math.round((xp - lv.from) / (lv.to - lv.from) * 100);
+  const xp = xpOf(), lv = levelOf(xp), cnt = unlockedCount(), rk = rankOf(cnt);
+  const pct = rk.next ? Math.round((cnt - rk.from) / (rk.next.at - rk.from) * 100) : 100;
   const dd = stats.day.d === today() ? stats.day : { words:0, reads:0 };
   const goal = (ico, label, cur, g) => `<div class="goal ${cur >= g ? "ok" : ""}"><div class="row"><span>${ico} ${label}</span><b>${Math.min(cur, g)} / ${g}${cur >= g ? " ✔" : ""}</b></div><div class="bar"><i style="width:${Math.min(100, cur / g * 100)}%"></i></div></div>`;
-  let h = `<div class="lvl"><div class="lvl-n">${lv.L}</div><div class="lvl-t"><b>${lv.t}</b><small>${fmtN(xp)} XP · prochain niveau à ${fmtN(lv.to)} XP</small><div class="bar"><i style="width:${pct}%"></i></div></div></div>`;
+  let h = `<div class="lvl"><div class="lvl-n">${rk.ico}</div><div class="lvl-t"><b>${rk.t}</b><small>${cnt} / ${ACH.length} succès · niveau ${lv.L} · ${fmtN(xp)} XP</small><div class="bar"><i style="width:${pct}%"></i></div><small class="nx">${rk.next ? "Prochain titre : " + rk.next.t + " (encore " + (rk.next.at - cnt) + " succès)" : "Titre suprême atteint !"}</small></div></div>`;
   h += `<div class="stats4">` + [["🔥", curStreak(), "jours d'affilée"], ["📝", liveNotes(), "notes"], ["✍️", fmtN(stats.words), "mots écrits"], ["👀", stats.reads, "relectures"]]
     .map(([i, v, l]) => `<div class="stat"><b>${i} ${v}</b><small>${l}</small></div>`).join("") + `</div>`;
+  h += `<h3>Titres<small>selon le nombre de succès</small></h3><div class="ranks">` +
+    [...RANKS.map(r => [r[0], r[1], r[2]]), [ACH.length, "💎", "Grand Maître"]]
+      .map(([n, ico, t], i) => `<span class="rk ${i === rk.i ? "cur" : cnt >= n ? "on" : ""}">${ico} ${t}<small>${n}</small></span>`).join("") + `</div>`;
   h += `<h3>Objectifs du jour</h3>` + goal("✍️", "Écrire " + DAY_WORDS + " mots", dd.words, DAY_WORDS) + goal("👀", "Relire " + DAY_READS + " notes", dd.reads, DAY_READS);
   for (const [k, label] of Object.entries(CATS)) {
     const list = ACH.filter(a => a.c === k), n = list.filter(a => stats.unlocked[a.id]).length;
     h += `<h3>${label}<small>${n} / ${list.length}</small></h3><div class="badges">` + list.map(badgeHtml).join("") + `</div>`;
   }
-  h += `<p class="note" style="margin-top:18px;text-align:left">Une relecture compte quand une note reste ouverte ${READ_MS / 1000} secondes sans être modifiée (une fois par note et par jour). Les mots comptent quand vous les écrivez.</p>`;
+  h += `<p class="note" style="margin-top:18px;text-align:left">Une relecture compte quand une note reste ouverte ${READ_MS / 1000} secondes sans être modifiée (une fois par note et par jour). Les mots comptent quand vous les écrivez. Les succès secrets se débloquent tout seuls : à vous de les trouver !</p>`;
   b.innerHTML = h;
 }
 renderAchBtn();
