@@ -4,15 +4,35 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#7719aa">
+<script>try{var t=localStorage.getItem("notes.theme");if(/^(light|dark|soft)$/.test(t))document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <title>Mes Notes</title>
 <style>
+/* Thèmes : clair (défaut) · sombre · sombre doux · automatique (sans data-theme = suit l'appareil) */
 :root{
+  color-scheme:light;
   --accent:#7719aa; --accent-soft:#efe3f6; --bg:#ffffff; --bg2:#f5f5f7; --bg3:#ebebef;
   --text:#1c1c1e; --muted:#76767c; --line:#e0e0e6; --sel:#dcebf7; --danger:#c42b1c;
+  --on-accent:#fff; --mark-bg:#fff17a; --mark-fg:#000; --grad:#3d0a5c; --shadow:rgba(0,0,0,.35);
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --accent:#b36ae0; --accent-soft:#34203f; --bg:#1b1b1f; --bg2:#242429; --bg3:#2d2d33;
+  --text:#f2f2f4; --muted:#9a9aa3; --line:#38383f; --sel:#2b3f55; --danger:#ff7b72;
+  --on-accent:#fff; --mark-bg:#e6d35c; --mark-fg:#000; --grad:#3d0a5c; --shadow:rgba(0,0,0,.6);
+}
+:root[data-theme="soft"]{
+  color-scheme:dark;
+  --accent:#a590dc; --accent-soft:#363250; --bg:#262932; --bg2:#2d303a; --bg3:#373b47;
+  --text:#c8ccd6; --muted:#8a92a2; --line:#3a3e4a; --sel:#35445c; --danger:#e0908a;
+  --on-accent:#1d1830; --mark-bg:#6e6a3a; --mark-fg:#f0ecd0; --grad:#2b2642; --shadow:rgba(0,0,0,.45);
 }
 @media (prefers-color-scheme:dark){
-  :root{--accent:#b36ae0; --accent-soft:#34203f; --bg:#1b1b1f; --bg2:#242429; --bg3:#2d2d33;
-    --text:#f2f2f4; --muted:#9a9aa3; --line:#38383f; --sel:#2b3f55;}
+  :root:not([data-theme]){
+    color-scheme:dark;
+    --accent:#b36ae0; --accent-soft:#34203f; --bg:#1b1b1f; --bg2:#242429; --bg3:#2d2d33;
+    --text:#f2f2f4; --muted:#9a9aa3; --line:#38383f; --sel:#2b3f55; --danger:#ff7b72;
+    --on-accent:#fff; --mark-bg:#e6d35c; --mark-fg:#000; --grad:#3d0a5c; --shadow:rgba(0,0,0,.6);
+  }
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0}
@@ -23,9 +43,9 @@ input{font:inherit;color:inherit}
 
 /* ---------- Auth ---------- */
 #auth{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px;
-  background:linear-gradient(160deg,var(--accent),#3d0a5c)}
+  background:linear-gradient(160deg,var(--accent),var(--grad))}
 .card{width:100%;max-width:380px;background:var(--bg);border-radius:18px;padding:28px 24px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
-.logo{width:56px;height:56px;border-radius:14px;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:28px;margin:0 auto 12px}
+.logo{width:56px;height:56px;border-radius:14px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:28px;margin:0 auto 12px}
 .card h1{text-align:center;margin:0 0 4px;font-size:22px}
 .card p.sub{text-align:center;margin:0 0 20px;color:var(--muted);font-size:14px}
 .tabs{display:flex;background:var(--bg2);border-radius:10px;padding:3px;margin-bottom:16px}
@@ -34,7 +54,7 @@ input{font:inherit;color:inherit}
 .card label{display:block;font-size:13px;font-weight:600;margin:12px 0 5px}
 .card input{width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg);font-size:16px}
 .card input:focus{outline:2px solid var(--accent);border-color:transparent}
-.primary{width:100%;margin-top:18px;padding:14px;background:var(--accent);color:#fff;border-radius:10px;font-weight:700}
+.primary{width:100%;margin-top:18px;padding:14px;background:var(--accent);color:var(--on-accent);border-radius:10px;font-weight:700}
 .primary:active{opacity:.85}
 .primary:disabled{opacity:.5}
 #authErr{color:var(--danger);font-size:13px;min-height:18px;margin-top:10px;text-align:center}
@@ -53,7 +73,7 @@ input{font:inherit;color:inherit}
 .icon{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-size:19px;flex:none}
 .icon:hover,.icon:active{background:var(--bg3)}
 .back{display:none}
-.avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px;flex:none}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-weight:700;font-size:13px;flex:none}
 .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
 
 .item{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;min-height:46px;border-left:4px solid transparent}
@@ -65,8 +85,9 @@ input{font:inherit;color:inherit}
 .sec{padding-left:38px;font-size:15px}
 .add{color:var(--accent);font-weight:600;padding:12px 14px;display:flex;gap:8px;width:100%;text-align:left}
 .add.sub{padding-left:38px;font-size:14px}
-.navfoot{border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom));display:flex;gap:4px}
-.navfoot button{flex:1;padding:10px 6px;font-size:13px;color:var(--muted);border-radius:8px;white-space:nowrap}
+.navfoot{border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.navfoot button{padding:11px 6px;font-size:13px;color:var(--muted);border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.navfoot #btnAch{color:var(--accent);font-weight:700}
 .navfoot button:hover{background:var(--bg3)}
 
 .search{padding:10px 12px;border-bottom:1px solid var(--line)}
@@ -107,12 +128,66 @@ input{font:inherit;color:inherit}
 #editor pre code{background:none;padding:0}
 #editor hr{border:0;border-top:1px solid var(--line);margin:1em 0}
 #editor a{color:var(--accent)}
-#editor mark,.page mark{background:#fff17a;color:#000;border-radius:3px;padding:0 2px}
+#editor mark,.page mark{background:var(--mark-bg);color:var(--mark-fg);border-radius:3px;padding:0 2px}
+#editor span[style*="background"]{color:var(--mark-fg)!important}
 #mdBox{flex:1;width:100%;border:0;resize:none;outline:none;background:var(--bg);color:var(--text);padding:12px 18px calc(60px + env(safe-area-inset-bottom));font:15px/1.6 ui-monospace,Menlo,Consolas,monospace}
-.toolbar button.on{background:var(--accent);color:#fff}
+.toolbar button.on{background:var(--accent);color:var(--on-accent)}
 .col-nav .search input{background:var(--bg)}
 .col-nav .page{background:transparent}
 .col-nav .page:hover{background:var(--bg3)}
+
+/* Indicateur d'enregistrement */
+.icon.dirty{position:relative}
+.icon.dirty::after{content:"";position:absolute;top:7px;right:7px;width:9px;height:9px;border-radius:50%;background:#f59e0b}
+.meta .unsaved{color:#d97706;font-weight:600}
+
+/* Fenêtre (succès, thème) */
+#modal{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);color:var(--text);width:100%;max-width:640px;max-height:92vh;max-height:92dvh;border-radius:18px 18px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -10px 40px var(--shadow)}
+.sheet-top{display:flex;align-items:center;gap:6px;padding:10px 10px 10px 18px;border-bottom:1px solid var(--line)}
+.sheet-top h2{margin:0;flex:1;font-size:18px}
+.sheet-body{overflow-y:auto;padding:16px 16px calc(24px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
+.sheet-body h3{margin:22px 0 10px;font-size:15px;display:flex;justify-content:space-between;align-items:baseline}
+.sheet-body h3 small{color:var(--muted);font-weight:500;font-size:12.5px}
+@media (min-width:900px){#modal{align-items:center}.sheet{border-radius:18px;max-height:86vh}}
+
+/* Thèmes */
+.theme-opt{display:flex;align-items:center;gap:14px;width:100%;padding:12px 14px;border:2px solid var(--line);border-radius:12px;margin-bottom:10px;text-align:left;background:var(--bg2)}
+.theme-opt.on{border-color:var(--accent)}
+.theme-opt .sw{width:46px;height:46px;border-radius:12px;border:1px solid var(--line);flex:none}
+.theme-opt b{display:block}
+.theme-opt small{color:var(--muted)}
+.theme-opt .ck{margin-left:auto;color:var(--accent);font-weight:700;font-size:20px}
+
+/* Succès */
+.lvl{display:flex;gap:14px;align-items:center;background:var(--accent-soft);border-radius:14px;padding:14px}
+.lvl-n{width:56px;height:56px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:24px;font-weight:800;flex:none}
+.lvl-t{flex:1;min-width:0}
+.lvl-t b{font-size:17px;display:block}
+.lvl-t small{color:var(--muted);display:block;margin:2px 0 8px}
+.bar{height:7px;background:var(--bg3);border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:4px;transition:width .4s}
+.lvl .bar{background:rgba(127,127,127,.25)}
+.stats4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.stat{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px 4px;text-align:center;min-width:0}
+.stat b{display:block;font-size:17px}
+.stat small{color:var(--muted);font-size:11.5px}
+.goal{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.goal .row{display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px}
+.goal.ok{border-color:var(--accent)}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.badge{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.badge .bi{font-size:28px;filter:grayscale(1);opacity:.4;line-height:1.1}
+.badge b{font-size:14px}
+.badge small{color:var(--muted);font-size:12px;line-height:1.3}
+.badge .bar{margin-top:6px}
+.badge .pr{font-size:11.5px;color:var(--muted);margin-top:2px}
+.badge.on{border-color:var(--accent);background:var(--accent-soft)}
+.badge.on .bi{filter:none;opacity:1}
+#achToast{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;width:max-content;transform:translate(-50%,-160%);z-index:70;display:flex;gap:12px;align-items:center;background:var(--bg);color:var(--text);border:2px solid var(--accent);border-radius:16px;padding:10px 18px;box-shadow:0 10px 30px var(--shadow);transition:transform .45s cubic-bezier(.2,1.2,.4,1);max-width:92%;pointer-events:none}
+#achToast.on{transform:translate(-50%,0)}
+#achToast .ti{font-size:30px}
+#achToast small{display:block;color:var(--accent);font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em}
 
 @media (max-width:899px){
   #app{display:block;position:relative}
@@ -127,6 +202,11 @@ input{font:inherit;color:inherit}
 }
 @media (min-width:900px) and (max-width:1199px){
   #app{grid-template-columns:230px 260px 1fr}
+}
+/* Ordinateur : plus de marge de chaque côté du texte, surtout à droite */
+@media (min-width:900px){
+  .meta{padding-left:36px;padding-right:clamp(48px,12%,180px)}
+  #editor,#mdBox{padding-left:36px;padding-right:clamp(48px,12%,180px)}
 }
 </style>
 </head>
@@ -169,8 +249,10 @@ input{font:inherit;color:inherit}
     <div class="search"><input id="qNav" type="search" placeholder="🔍 Rechercher dans toutes les notes" autocomplete="off"></div>
     <div class="scroll" id="nav"></div>
     <div class="navfoot">
+      <button id="btnAch">🏆 Succès</button>
+      <button id="btnTheme">🎨 Thème</button>
       <button id="btnImportMd">⬆ Importer .md</button>
-      <button id="btnExport">⬇ Sauvegarde JSON</button>
+      <button id="btnExport">⬇ Sauvegarde</button>
       <input type="file" id="fileMd" accept=".md,.markdown,.txt,text/markdown,text/plain" multiple class="hidden">
     </div>
   </section>
@@ -189,6 +271,7 @@ input{font:inherit;color:inherit}
     <div class="top">
       <button class="icon back" id="backPages" aria-label="Retour">‹</button>
       <input class="title-in" id="title" placeholder="Titre de la page" maxlength="120">
+      <button class="icon" id="btnSave" title="Enregistrer (Ctrl+S)" aria-label="Enregistrer">💾</button>
       <button class="icon" id="btnDelPage" title="Supprimer la page" aria-label="Supprimer">🗑</button>
     </div>
     <div class="toolbar" id="toolbar">
@@ -220,6 +303,13 @@ input{font:inherit;color:inherit}
   </section>
 </div>
 <div id="toast"></div>
+<div id="achToast" role="status" aria-live="polite"></div>
+<div id="modal" class="hidden" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="sheet">
+    <div class="sheet-top"><h2 id="mTitle"></h2><button class="icon" id="mClose" aria-label="Fermer">✕</button></div>
+    <div class="sheet-body" id="mBody"></div>
+  </div>
+</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
@@ -247,7 +337,7 @@ const $ = s => document.querySelector(s);
 const uid = () => Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4);
 const COLORS = ["#8b5cf6","#f97316","#10b981","#ef4444","#3b82f6","#eab308","#ec4899","#14b8a6"];
 const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const plain = html => { const d = document.createElement("div"); d.innerHTML = html; return (d.textContent || "").replace(/\s+/g," ").trim(); };
+const plain = html => { const d = document.createElement("div"); d.innerHTML = html.replace(/<img[^>]*>/gi, " "); return (d.textContent || "").replace(/​/g, "").replace(/\s+/g," ").trim(); };
 const fmtDate = t => new Date(t).toLocaleString("fr-FR", { weekday:"long", day:"numeric", month:"long", year:"numeric", hour:"2-digit", minute:"2-digit" });
 const fmtShort = t => { const d = new Date(t), n = new Date(); return d.toDateString() === n.toDateString() ? d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}) : d.toLocaleDateString("fr-FR",{day:"numeric",month:"short"}); };
 let tt; function toast(m){ const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("on"), 2600); }
@@ -298,7 +388,10 @@ $("#authForm").addEventListener("submit", async e => {
   } catch (ex) { err.textContent = AUTH_ERR[ex.code] || ("Erreur : " + (ex.code || ex.message)); }
   btn.disabled = false;
 });
-$("#btnLogout").onclick = async () => { await flushSave(); await signOut(auth); };
+$("#btnLogout").onclick = async () => {
+  await Promise.race([flushSave(), new Promise(r => setTimeout(r, 3000))]);   // ne bloque pas la déconnexion hors-ligne
+  await signOut(auth);
+};
 
 /* ---------- État ---------- */
 let uidUser = null, unsubStruct = null, unsubPages = null;
@@ -314,21 +407,42 @@ const curNb = () => struct.notebooks.find(n => n.id === sel.nb);
 const curSec = () => curNb()?.sections.find(s => s.id === sel.sec);
 const curPage = () => pages.get(sel.page);
 const secPages = () => [...pages.values()].filter(p => p.sec === sel.sec);
-const setView = v => { view = v; document.body.dataset.view = v; };
+const setView = v => { view = v; document.body.dataset.view = v; watchRead(); };
 const saveSel = () => { try { localStorage.setItem("notes.sel." + uidUser, JSON.stringify(sel)); } catch {} };
 
 /* ---------- Écriture ---------- */
 async function saveStruct(){ try { await setDoc(structRef(), struct); } catch (e) { toast("Erreur d'enregistrement : " + e.code); } }
-function queuePage(id){ dirty.add(id); clearTimeout(saveT); saveT = setTimeout(flushSave, 600); }
-async function flushSave(){
-  clearTimeout(saveT);
+const SAVE_MS = 60000;   // enregistrement automatique : 60 s après la première modification (ou Ctrl+S / bouton 💾)
+function setMeta(){
+  const p = curPage(); if (!p) return;
+  const un = dirty.has(p.id);
+  $("#meta").innerHTML = esc(fmtDate(p.updated)) + (un ? ' · <span class="unsaved">● non enregistré (Ctrl+S)</span>' : " · ✔ enregistré");
+  $("#btnSave").classList.toggle("dirty", un);
+}
+function scheduleSave(){ if (!saveT) saveT = setTimeout(flushSave, SAVE_MS); }
+function queuePage(id){ dirty.add(id); scheduleSave(); setMeta(); }
+function flushSave(){
+  clearTimeout(saveT); saveT = null;
+  if (!uidUser) return Promise.resolve();
   const ids = [...dirty]; dirty.clear();
+  const jobs = [], fail = e => toast("Erreur d'enregistrement : " + (e.code || e.message));
   for (const id of ids) {
     const p = pages.get(id); if (!p) continue;
     if (JSON.stringify(p).length > 950000) { toast("⚠ Page trop volumineuse (limite 1 Mo) : retirez des images."); continue; }
-    try { await setDoc(pageRef(id), p); } catch (e) { toast("Erreur d'enregistrement : " + (e.code || e.message)); }
+    jobs.push(setDoc(pageRef(id), p).catch(fail));
   }
+  if (statsDirty && stats) { statsDirty = false; jobs.push(setDoc(statsRef(), stats).catch(fail)); }
+  setMeta();
+  return Promise.all(jobs);
 }
+function manualSave(){
+  if (!dirty.size && !statsDirty) return toast("✔ Déjà enregistré");
+  flushSave(); toast("💾 Enregistré");
+}
+$("#btnSave").onclick = manualSave;
+addEventListener("keydown", e => {
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "s") { e.preventDefault(); if (uidUser) manualSave(); }
+});
 
 /* ---------- Démarrage / écoute temps réel ---------- */
 function showAuth(){ $("#loading").classList.add("hidden"); $("#app").classList.add("hidden"); $("#auth").classList.remove("hidden");
@@ -340,6 +454,7 @@ function start(user){
   $("#avatar").textContent = fromEmail(user.email || "?").slice(0,2).toUpperCase();
   try { sel = { ...sel, ...JSON.parse(localStorage.getItem("notes.sel." + uidUser) || "{}") }; } catch {}
   pages.clear(); structReady = false; setView("nav");
+  stats = null; statsDirty = false; lastLevel = 0; pagesSynced = false; renderAchBtn();
 
   unsubStruct = onSnapshot(structRef(), snap => {
     if (!snap.exists()) {
@@ -359,15 +474,24 @@ function start(user){
     snap.docChanges().forEach(ch => {
       const id = ch.doc.id;
       if (ch.type === "removed") { pages.delete(id); if (sel.page === id) { sel.page = null; refresh = true; } }
-      else {
+      else if (!dirty.has(id)) {   // ne jamais écraser une modification locale pas encore enregistrée
         pages.set(id, ch.doc.data());
         const typing = [$("#editor"), $("#title"), $("#mdBox")].includes(document.activeElement);
         if (id === sel.page && !ch.doc.metadata.hasPendingWrites && !typing) refresh = true;
       }
     });
+    pagesSynced = !snap.metadata.fromCache;
     setSync(snap.metadata.hasPendingWrites, snap.metadata.fromCache);
     renderNav(); renderPages(); if (refresh) renderEditor();
+    scheduleCheck();
   }, err => toast("Erreur de lecture : " + err.code));
+
+  unsubStats = onSnapshot(statsRef(), snap => {
+    if (snap.metadata.hasPendingWrites) return;
+    if (snap.exists()) { const r = { ...newStats(), ...snap.data() }; stats = stats ? mergeStats(stats, r) : r; }
+    else if (!snap.metadata.fromCache && !stats) { stats = newStats(); statsDirty = true; scheduleSave(); }
+    if (stats) { renderAchBtn(); scheduleCheck(); }
+  }, err => console.warn("stats :", err.code));
 }
 
 async function createStarter(){
@@ -378,7 +502,11 @@ async function createStarter(){
   sel = { nb, sec: sc, page: pid };
   await saveStruct(); await setDoc(pageRef(pid), p); creatingStarter = false;
 }
-function stop(){ unsubStruct?.(); unsubPages?.(); unsubStruct = unsubPages = null; uidUser = null; }
+function stop(){
+  unsubStruct?.(); unsubPages?.(); unsubStats?.(); unsubStruct = unsubPages = unsubStats = null; uidUser = null;
+  for (const t of [saveT, readT, wcT, checkT]) clearTimeout(t);
+  saveT = readT = wcT = checkT = null; readFor = null; dirty.clear(); stats = null; closeModal();
+}
 if (configured) onAuthStateChanged(auth, u => { if (u) start(u); else { stop(); showAuth(); } });
 else showAuth();
 
@@ -431,11 +559,11 @@ function renderPages(){
 }
 function renderEditor(){
   const p = curPage(), has = !!p;
-  ["#editor","#toolbar","#meta","#title","#btnDelPage"].forEach(s => $(s).classList.toggle("hidden", !has));
+  ["#editor","#toolbar","#meta","#title","#btnSave","#btnDelPage"].forEach(s => $(s).classList.toggle("hidden", !has));
   $("#noPage").classList.toggle("hidden", has);
   mdMode = false; $("#mdBox").classList.add("hidden"); $("#btnMd").classList.remove("on");
-  if (!has) return;
-  $("#title").value = p.title; $("#editor").innerHTML = p.html; $("#meta").textContent = fmtDate(p.updated);
+  if (!has) { watchRead(); return; }
+  $("#title").value = p.title; $("#editor").innerHTML = p.html; setMeta(); baseWords(p); watchRead();
 }
 
 /* ---------- Navigation / actions ---------- */
@@ -446,8 +574,8 @@ $("#nav").addEventListener("click", e => {
   if (e.target.closest("#addNb")) return addNb();
   if (e.target.closest("#addSec")) return addSec();
   const nbEl = e.target.closest("[data-nb]"), secEl = e.target.closest("[data-sec]");
-  if (secEl) { flushSave(); sel.sec = secEl.dataset.sec; sel.page = null; query = ""; $("#q").value = ""; $("#qNav").value = ""; saveSel(); renderNav(); renderPages(); renderEditor(); setView("pages"); }
-  else if (nbEl) { flushSave(); sel.nb = nbEl.dataset.nb; sel.sec = curNb().sections[0]?.id; sel.page = null; saveSel(); renderNav(); renderPages(); renderEditor(); }
+  if (secEl) { sel.sec = secEl.dataset.sec; sel.page = null; query = ""; $("#q").value = ""; $("#qNav").value = ""; saveSel(); renderNav(); renderPages(); renderEditor(); setView("pages"); }
+  else if (nbEl) { sel.nb = nbEl.dataset.nb; sel.sec = curNb().sections[0]?.id; sel.page = null; saveSel(); renderNav(); renderPages(); renderEditor(); }
 });
 async function addNb(){
   const name = prompt("Nom du nouveau carnet :"); if (!name?.trim()) return;
@@ -485,7 +613,7 @@ $("#btnAddPage").onclick = () => {
 };
 $("#pages").addEventListener("click", e => {
   const el = e.target.closest("[data-page]"); if (!el) return;
-  flushSave(); sel = { nb: el.dataset.nb, sec: el.dataset.sec, page: el.dataset.page }; saveSel();
+  sel = { nb: el.dataset.nb, sec: el.dataset.sec, page: el.dataset.page }; saveSel();
   renderNav(); renderPages(); renderEditor(); setView("edit");
 });
 $("#btnDelPage").onclick = async () => {
@@ -494,7 +622,7 @@ $("#btnDelPage").onclick = async () => {
   try { await deleteDoc(pageRef(p.id)); } catch (e) { toast("Erreur : " + e.code); }
 };
 $("#backNav").onclick = () => setView("nav");
-$("#backPages").onclick = () => { flushSave(); setView("pages"); renderPages(); };
+$("#backPages").onclick = () => { setView("pages"); renderPages(); };
 const onSearch = e => {
   query = e.target.value.trim();
   (e.target.id === "q" ? $("#qNav") : $("#q")).value = e.target.value;
@@ -545,7 +673,7 @@ function resultHtml(p){
     <b>${hl(p.title || "Sans titre")}</b><small>${fmtShort(p.updated)} · ${hl(snippet(p))}</small></div>`;
 }
 function openPageEl(el){
-  flushSave(); sel = { nb: el.dataset.nb, sec: el.dataset.sec, page: el.dataset.page }; saveSel();
+  sel = { nb: el.dataset.nb, sec: el.dataset.sec, page: el.dataset.page }; saveSel();
   renderNav(); renderPages(); renderEditor(); setView("edit");
 }
 
@@ -717,7 +845,7 @@ $("#fileMd").addEventListener("change", async e => {
     const now = Date.now(), p = { id: uid(), nb: sel.nb, sec: sel.sec, title: title.slice(0, 120), html: mdToHtml(txt), created: now, updated: now };
     pages.set(p.id, p); queuePage(p.id); last = p;
   }
-  sel.page = last.id; saveSel(); renderAll(); setView("edit"); toast(`${files.length} fichier(s) .md importé(s) ✔`);
+  sel.page = last.id; saveSel(); renderAll(); setView("edit"); flushSave(); toast(`${files.length} fichier(s) .md importé(s) ✔`);
 });
 
 /* ---------- Markdown : raccourcis pendant la frappe ---------- */
@@ -784,7 +912,7 @@ $("#editor").addEventListener("paste", e => {              // coller du texte Ma
 function touch(){
   const p = curPage(); if (!p) return;
   p.html = mdMode ? mdToHtml($("#mdBox").value) : $("#editor").innerHTML; p.title = $("#title").value; p.updated = Date.now();
-  $("#meta").textContent = fmtDate(p.updated); queuePage(p.id);
+  queuePage(p.id); markEdit();
 }
 let listT; const refreshLists = () => { clearTimeout(listT); listT = setTimeout(() => { renderPages(); renderNav(); }, 500); };
 $("#editor").addEventListener("input", () => { touch(); refreshLists(); });
@@ -794,6 +922,7 @@ $("#editor").addEventListener("change", e => {
   if (e.target.type === "checkbox") {
     e.target.toggleAttribute("checked", e.target.checked);
     e.target.closest(".todo")?.classList.toggle("done", e.target.checked); touch();
+    if (e.target.checked) bump("tasks");
   }
 });
 $("#editor").addEventListener("keydown", e => {
@@ -821,7 +950,7 @@ $("#toolbar").addEventListener("click", e => {
   if (!ed.contains(getSelection().anchorNode)) ed.focus();
   switch (c) {
     case "h1": case "h2": { const cur = document.queryCommandValue("formatBlock").toLowerCase(); document.execCommand("formatBlock", false, cur === c ? "p" : c); break; }
-    case "mark": document.execCommand("hiliteColor", false, "#fff17a"); break;
+    case "mark": toggleMark(); break;
     case "ul": document.execCommand("insertUnorderedList"); break;
     case "ol": document.execCommand("insertOrderedList"); break;
     case "todo": insertTodo(); break;
@@ -842,7 +971,7 @@ $("#fileImg").addEventListener("change", e => {
     const k = Math.min(1, 900 / Math.max(img.width, img.height));
     const cv = document.createElement("canvas"); cv.width = img.width * k; cv.height = img.height * k;
     cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height); URL.revokeObjectURL(url);
-    $("#editor").focus(); document.execCommand("insertImage", false, cv.toDataURL("image/jpeg", .7)); touch();
+    $("#editor").focus(); document.execCommand("insertImage", false, cv.toDataURL("image/jpeg", .7)); touch(); bump("images");
   };
   img.src = url;
 });
@@ -853,7 +982,258 @@ $("#btnExport").onclick = () => {
   a.href = URL.createObjectURL(new Blob([JSON.stringify({ struct, pages: [...pages.values()] }, null, 1)], { type: "application/json" }));
   a.download = `notes-${new Date().toISOString().slice(0,10)}.json`; a.click();
 };
-addEventListener("visibilitychange", () => { if (document.hidden) flushSave(); });
+// On quitte l'onglet / l'appli : on enregistre pour ne rien perdre
+document.addEventListener("visibilitychange", () => { if (document.hidden) { clearTimeout(readT); readFor = null; flushSave(); } else watchRead(); });
+addEventListener("pagehide", () => flushSave());
+
+/* ============================================================
+   Surligner (balise <mark>, lisible dans tous les thèmes)
+   ============================================================ */
+function toggleMark(){
+  const s = getSelection(); if (!s.rangeCount) return;
+  const n = s.anchorNode, el = n && (n.nodeType === 3 ? n.parentElement : n), m = el && el.closest && el.closest("mark");
+  if (m) { m.replaceWith(...m.childNodes); return; }
+  if (s.isCollapsed) return;
+  const d = document.createElement("div"); d.appendChild(s.getRangeAt(0).cloneContents());
+  document.execCommand("insertHTML", false, "<mark>" + d.innerHTML + "</mark>&#8203;");
+}
+
+/* ============================================================
+   Thèmes
+   ============================================================ */
+const THEMES = [
+  ["auto",  "Automatique", "Suit le réglage de l'appareil",     "linear-gradient(135deg,#fff 50%,#1b1b1f 50%)"],
+  ["light", "Clair",       "Fond blanc, texte sombre",           "linear-gradient(135deg,#fff 50%,#7719aa 50%)"],
+  ["dark",  "Sombre",      "Fond noir, contraste élevé",         "linear-gradient(135deg,#1b1b1f 50%,#b36ae0 50%)"],
+  ["soft",  "Sombre doux", "Gris-bleu, couleurs adoucies",       "linear-gradient(135deg,#262932 50%,#a590dc 50%)"]
+];
+const curTheme = () => { try { const t = localStorage.getItem("notes.theme"); return /^(light|dark|soft)$/.test(t) ? t : "auto"; } catch { return "auto"; } };
+function syncThemeColor(){
+  const c = getComputedStyle(document.documentElement).getPropertyValue("--bg2").trim();
+  if (c) $('meta[name="theme-color"]').content = c;
+}
+function applyTheme(t){
+  const r = document.documentElement;
+  if (t === "auto") r.removeAttribute("data-theme"); else r.setAttribute("data-theme", t);
+  try { if (t === "auto") localStorage.removeItem("notes.theme"); else localStorage.setItem("notes.theme", t); } catch {}
+  syncThemeColor();
+}
+matchMedia("(prefers-color-scheme:dark)").addEventListener("change", syncThemeColor);
+syncThemeColor();
+function renderThemes(){
+  const cur = curTheme();
+  $("#mBody").innerHTML = THEMES.map(([id, name, desc, sw]) =>
+    `<button class="theme-opt ${id === cur ? "on" : ""}" data-theme-opt="${id}"><span class="sw" style="background:${sw}"></span>
+     <span><b>${name}</b><small>${desc}</small></span>${id === cur ? '<span class="ck">✓</span>' : ""}</button>`).join("") +
+    `<p class="note" style="text-align:left">Le thème est mémorisé sur cet appareil : vous pouvez en choisir un autre sur votre téléphone et sur votre ordinateur.</p>`;
+}
+
+/* ============================================================
+   Fenêtre (succès / thème)
+   ============================================================ */
+let modalKind = null;
+function openModal(kind, title){ modalKind = kind; $("#mTitle").textContent = title; $("#modal").classList.remove("hidden"); renderModal(); $("#mBody").scrollTop = 0; }
+function closeModal(){ modalKind = null; $("#modal").classList.add("hidden"); }
+function renderModal(){ if (modalKind === "ach") renderAch(); else if (modalKind === "theme") renderThemes(); }
+$("#mClose").onclick = closeModal;
+$("#modal").addEventListener("click", e => { if (e.target.id === "modal") closeModal(); });
+$("#mBody").addEventListener("click", e => { const t = e.target.closest("[data-theme-opt]"); if (t) { applyTheme(t.dataset.themeOpt); renderThemes(); } });
+addEventListener("keydown", e => { if (e.key === "Escape" && modalKind) closeModal(); });
+$("#btnTheme").onclick = () => openModal("theme", "🎨 Thème");
+$("#btnAch").onclick = () => openModal("ach", "🏆 Succès");
+
+/* ============================================================
+   Succès : écrire plus, relire plus
+   Les statistiques sont enregistrées dans Firestore (users/{uid}/meta/stats)
+   au même rythme que les notes (60 s, Ctrl+S).
+   ============================================================ */
+const READ_MS = 8000, DAY_WORDS = 100, DAY_READS = 2;
+let stats = null, statsDirty = false, unsubStats = null, lastEdit = 0, lastLevel = 0, pagesSynced = false;
+let wcT = null, wcBase = 0, wcFor = null, readT = null, readFor = null, readOpen = 0, checkT = null;
+const statsRef = () => doc(db, "users", uidUser, "meta", "stats");
+const newStats = () => ({ words:0, reads:0, oldReads:0, tasks:0, images:0, nightWords:0, activeDays:0, streak:0, bestStreak:0,
+  lastDay:"", bestDayWords:0, bestDayReads:0, day:{ d:"", words:0, reads:0 }, readPages:{}, unlocked:{} });
+const pad2 = n => String(n).padStart(2, "0");
+const dayStr = d => d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+const today = () => dayStr(new Date());
+const prevDay = s => { const [y, m, d] = s.split("-").map(Number); return dayStr(new Date(y, m - 1, d - 1)); };
+const fmtN = n => Number(n).toLocaleString("fr-FR");
+const wordCount = t => { t = t.replace(/​/g, "").trim(); return t ? t.split(/\s+/).length : 0; };
+const wcCache = new Map();
+function pwords(p){
+  const c = wcCache.get(p.id);
+  if (c && c.u === p.updated && c.l === p.html.length) return c.w;
+  const w = wordCount(ptxt(p)); wcCache.set(p.id, { u: p.updated, l: p.html.length, w }); return w;
+}
+const liveNotes = () => { let n = 0; for (const p of pages.values()) if (pwords(p) >= 3) n++; return n; };
+const curStreak = () => stats && (stats.lastDay === today() || stats.lastDay === prevDay(today())) ? stats.streak : 0;
+
+/* fusion avec la version d'un autre appareil : on ne perd jamais de progression */
+function mergeStats(a, b){
+  const r = { ...a };
+  for (const k of ["words","reads","oldReads","tasks","images","nightWords","activeDays","bestStreak","bestDayWords","bestDayReads"]) r[k] = Math.max(a[k] || 0, b[k] || 0);
+  r.unlocked = { ...b.unlocked, ...a.unlocked };
+  r.readPages = { ...b.readPages };
+  for (const [id, e] of Object.entries(a.readPages || {})) {
+    const o = r.readPages[id];
+    r.readPages[id] = !o ? e : { d: e.d >= o.d ? e.d : o.d, n: Math.max(e.n, o.n) };
+  }
+  const x = (a.lastDay || "") >= (b.lastDay || "") ? a : b; r.lastDay = x.lastDay; r.streak = x.streak;
+  const ad = a.day || {}, bd = b.day || {};
+  r.day = (ad.d || "") === (bd.d || "")
+    ? { d: ad.d || "", words: Math.max(ad.words || 0, bd.words || 0), reads: Math.max(ad.reads || 0, bd.reads || 0), gw: ad.gw || bd.gw || 0, gr: ad.gr || bd.gr || 0 }
+    : ((ad.d || "") > (bd.d || "") ? ad : bd);
+  return r;
+}
+
+/* activité du jour, série, compteurs */
+const dayObj = () => { const d = today(); if (stats.day.d !== d) stats.day = { d, words:0, reads:0 }; return stats.day; };
+function activity(){
+  const d = today(); if (stats.lastDay === d) return;
+  stats.activeDays++; stats.streak = stats.lastDay === prevDay(d) ? stats.streak + 1 : 1;
+  stats.bestStreak = Math.max(stats.bestStreak, stats.streak); stats.lastDay = d;
+}
+function statsChanged(){ statsDirty = true; scheduleSave(); scheduleCheck(); }
+function bump(k){ if (!stats) return; stats[k]++; activity(); statsChanged(); }
+function addWords(n){
+  if (!stats || n <= 0) return;
+  const dd = dayObj(); stats.words += n; dd.words += n; stats.bestDayWords = Math.max(stats.bestDayWords, dd.words);
+  if (new Date().getHours() < 5) stats.nightWords += n;
+  activity(); statsChanged();
+}
+function registerRead(p){
+  if (!stats) return;
+  const d = today(), e = stats.readPages[p.id] || { d:"", n:0 };
+  if (e.d === d) return;                                  // une seule relecture par note et par jour
+  stats.readPages[p.id] = { d, n: e.n + 1 }; stats.reads++;
+  const dd = dayObj(); dd.reads++; stats.bestDayReads = Math.max(stats.bestDayReads, dd.reads);
+  if (p.created && Date.now() - p.created > 30 * 864e5) stats.oldReads++;
+  activity(); statsChanged();
+}
+
+/* mots écrits : mesurés 1,5 s après la frappe, plafonnés pour éviter qu'un gros copier-coller compte comme du travail */
+function baseWords(p){ wcFor = p.id; wcBase = pwords(p); }
+function markEdit(){
+  lastEdit = Date.now(); clearTimeout(wcT);
+  wcT = setTimeout(() => {
+    const p = curPage(); if (!p || wcFor !== p.id) return;
+    const cur = pwords(p), d = cur - wcBase; wcBase = cur;
+    if (d > 0) addWords(Math.min(d, 40)); else scheduleCheck();
+  }, 1500);
+}
+
+/* relecture : note affichée ≥ 8 s, sans modification, au moins 5 mots */
+const pageVisible = () => !document.hidden && !!curPage() && (!isMobile() || view === "edit");
+function watchRead(){
+  const p = curPage();
+  if (!p || !pageVisible()) { clearTimeout(readT); readFor = null; return; }
+  if (readFor === p.id) return;
+  clearTimeout(readT); readFor = p.id; readOpen = Date.now();
+  readT = setTimeout(() => {
+    const q = curPage();
+    if (!q || q.id !== p.id || !pageVisible()) { readFor = null; return; }
+    if (lastEdit > readOpen || pwords(q) < 5) return;
+    registerRead(q);
+  }, READ_MS);
+}
+
+/* niveaux */
+const LEVELS = ["Novice","Apprenti","Scribe","Chroniqueur","Érudit","Maître des notes","Archiviste","Sage","Légende"];
+const xpOf = () => liveNotes() * 20 + Math.floor(stats.words / 20) + stats.reads * 10 + stats.tasks * 3 + stats.activeDays * 15 + Object.keys(stats.unlocked).length * 50;
+const levelOf = xp => { const L = Math.floor(Math.sqrt(xp / 50)) + 1; return { L, from: 50 * (L - 1) ** 2, to: 50 * L ** 2, t: LEVELS[Math.min(L - 1, LEVELS.length - 1)] }; };
+function renderAchBtn(){ $("#btnAch").textContent = stats ? "🏆 Niv. " + levelOf(xpOf()).L : "🏆 Succès"; }
+
+/* liste des succès : [id, catégorie, icône, nom, description, objectif, valeur actuelle] */
+const A = (id, c, i, n, d, g, v) => ({ id, c, i, n, d, g, v });
+const secCount = () => struct.notebooks.reduce((n, b) => n + b.sections.length, 0);
+const readLive = () => { if (!pagesSynced) return 0; let n = 0; for (const p of pages.values()) if (pwords(p) >= 3 && stats.readPages[p.id]) n++; return n; };
+const CATS = { w:"✍️ Écriture", r:"👀 Relecture", s:"🔥 Régularité", o:"🗂️ Organisation" };
+const ACH = [
+  A("n1",   "w","✍️","Première note",       "Écrire une note",                     1,      () => liveNotes()),
+  A("n10",  "w","📝","Carnet bien rempli",  "Avoir 10 notes",                      10,     () => liveNotes()),
+  A("n50",  "w","📚","Bibliothèque",        "Avoir 50 notes",                      50,     () => liveNotes()),
+  A("n200", "w","🏛️","Grand archiviste",    "Avoir 200 notes",                     200,    () => liveNotes()),
+  A("w500", "w","✒️","Premières lignes",    "Écrire 500 mots",                     500,    () => stats.words),
+  A("w5k",  "w","🖋️","Plume fluide",        "Écrire 5 000 mots",                   5000,   () => stats.words),
+  A("w25k", "w","📖","Romancier",           "Écrire 25 000 mots",                  25000,  () => stats.words),
+  A("w100k","w","🧠","Encyclopédie vivante","Écrire 100 000 mots",                 100000, () => stats.words),
+  A("day500","w","⚡","Journée productive","Écrire 500 mots en un jour",           500,    () => stats.bestDayWords),
+  A("t10",  "w","✅","Fait !",              "Cocher 10 tâches",                    10,     () => stats.tasks),
+  A("t50",  "w","🎯","Chasseur de tâches",  "Cocher 50 tâches",                    50,     () => stats.tasks),
+  A("img1", "w","🖼️","Illustrateur",        "Ajouter une image à une note",        1,      () => stats.images),
+  A("r1",   "r","👀","Première relecture",  "Relire une note",                     1,      () => stats.reads),
+  A("r10",  "r","🔍","Lecteur attentif",    "Faire 10 relectures",                 10,     () => stats.reads),
+  A("r50",  "r","🐘","Mémoire d'éléphant",  "Faire 50 relectures",                 50,     () => stats.reads),
+  A("r200", "r","🎓","Réviseur d'élite",    "Faire 200 relectures",                200,    () => stats.reads),
+  A("rday5","r","📅","Séance de révision",  "Relire 5 notes en un jour",           5,      () => stats.bestDayReads),
+  A("rold", "r","🕰️","Archéologue",         "Relire une note de plus de 30 jours", 1,      () => stats.oldReads),
+  A("rall", "r","🧹","Zéro oubli",          "Avoir relu toutes vos notes (5 minimum)", () => Math.max(5, liveNotes()), () => readLive()),
+  A("s3",   "s","🔥","En route",            "Écrire ou relire 3 jours d'affilée",  3,      () => stats.bestStreak),
+  A("s7",   "s","🔥","Semaine complète",    "7 jours d'affilée",                   7,      () => stats.bestStreak),
+  A("s30",  "s","🌟","Mois de feu",         "30 jours d'affilée",                  30,     () => stats.bestStreak),
+  A("night","s","🌙","Noctambule",          "Écrire 100 mots entre minuit et 5 h", 100,    () => stats.nightWords),
+  A("nb3",  "o","🗂️","Organisé",            "Avoir 3 carnets",                     3,      () => struct.notebooks.length),
+  A("sec6", "o","📂","Bien rangé",          "Avoir 6 sections en tout",            6,      secCount)
+];
+const goalOf = a => typeof a.g === "function" ? a.g() : a.g;
+
+/* vérification des déblocages + notifications */
+const toastQ = []; let toastBusy = false;
+function announce(list){
+  if (list.length > 3) list = [{ k:"Succès débloqués", i:"🏆", n: list.length + " nouveaux succès !" }];
+  toastQ.push(...list); if (!toastBusy) nextToast();
+}
+function nextToast(){
+  const t = toastQ.shift(), el = $("#achToast");
+  if (!t) { toastBusy = false; return; }
+  toastBusy = true;
+  el.innerHTML = `<span class="ti">${t.i}</span><div><small>${esc(t.k)}</small><b>${esc(t.n)}</b></div>`;
+  el.classList.add("on");
+  setTimeout(() => { el.classList.remove("on"); setTimeout(nextToast, 500); }, 3600);
+}
+function scheduleCheck(){ clearTimeout(checkT); checkT = setTimeout(checkAch, 400); }
+function checkAch(){
+  if (!stats || !structReady) return;
+  const out = [];
+  for (const a of ACH) {
+    if (stats.unlocked[a.id]) continue;
+    if (a.v() >= goalOf(a)) { stats.unlocked[a.id] = Date.now(); out.push({ k:"Succès débloqué", i:a.i, n:a.n }); }
+  }
+  const dd = stats.day.d === today() ? stats.day : null;
+  if (dd && !dd.gw && dd.words >= DAY_WORDS) { dd.gw = 1; out.push({ k:"Objectif du jour", i:"🎯", n: DAY_WORDS + " mots écrits !" }); }
+  if (dd && !dd.gr && dd.reads >= DAY_READS) { dd.gr = 1; out.push({ k:"Objectif du jour", i:"🎯", n: DAY_READS + " notes relues !" }); }
+  if (out.length) { statsDirty = true; scheduleSave(); announce(out); }
+  const lv = levelOf(xpOf()).L;
+  if (lastLevel && lv > lastLevel) announce([{ k:"Niveau supérieur", i:"⬆️", n:"Niveau " + lv + " · " + levelOf(xpOf()).t }]);
+  lastLevel = lv;
+  renderAchBtn(); if (modalKind === "ach") renderAch();
+}
+
+/* panneau Succès */
+function badgeHtml(a){
+  const ok = stats.unlocked[a.id], g = goalOf(a), v = Math.min(a.v(), g);
+  return `<div class="badge ${ok ? "on" : ""}"><span class="bi">${a.i}</span><b>${a.n}</b><small>${a.d}</small>` +
+    (ok ? `<span class="pr">✔ ${new Date(ok).toLocaleDateString("fr-FR", { day:"numeric", month:"short", year:"numeric" })}</span>`
+        : `<div class="bar"><i style="width:${Math.round(v / g * 100)}%"></i></div><span class="pr">${fmtN(v)} / ${fmtN(g)}</span>`) + `</div>`;
+}
+function renderAch(){
+  const b = $("#mBody");
+  if (!stats) { b.innerHTML = '<div class="empty">Chargement de vos statistiques…</div>'; return; }
+  const xp = xpOf(), lv = levelOf(xp), pct = Math.round((xp - lv.from) / (lv.to - lv.from) * 100);
+  const dd = stats.day.d === today() ? stats.day : { words:0, reads:0 };
+  const goal = (ico, label, cur, g) => `<div class="goal ${cur >= g ? "ok" : ""}"><div class="row"><span>${ico} ${label}</span><b>${Math.min(cur, g)} / ${g}${cur >= g ? " ✔" : ""}</b></div><div class="bar"><i style="width:${Math.min(100, cur / g * 100)}%"></i></div></div>`;
+  let h = `<div class="lvl"><div class="lvl-n">${lv.L}</div><div class="lvl-t"><b>${lv.t}</b><small>${fmtN(xp)} XP · prochain niveau à ${fmtN(lv.to)} XP</small><div class="bar"><i style="width:${pct}%"></i></div></div></div>`;
+  h += `<div class="stats4">` + [["🔥", curStreak(), "jours d'affilée"], ["📝", liveNotes(), "notes"], ["✍️", fmtN(stats.words), "mots écrits"], ["👀", stats.reads, "relectures"]]
+    .map(([i, v, l]) => `<div class="stat"><b>${i} ${v}</b><small>${l}</small></div>`).join("") + `</div>`;
+  h += `<h3>Objectifs du jour</h3>` + goal("✍️", "Écrire " + DAY_WORDS + " mots", dd.words, DAY_WORDS) + goal("👀", "Relire " + DAY_READS + " notes", dd.reads, DAY_READS);
+  for (const [k, label] of Object.entries(CATS)) {
+    const list = ACH.filter(a => a.c === k), n = list.filter(a => stats.unlocked[a.id]).length;
+    h += `<h3>${label}<small>${n} / ${list.length}</small></h3><div class="badges">` + list.map(badgeHtml).join("") + `</div>`;
+  }
+  h += `<p class="note" style="margin-top:18px;text-align:left">Une relecture compte quand une note reste ouverte ${READ_MS / 1000} secondes sans être modifiée (une fois par note et par jour). Les mots comptent quand vous les écrivez.</p>`;
+  b.innerHTML = h;
+}
+renderAchBtn();
 </script>
 </body>
 </html>
