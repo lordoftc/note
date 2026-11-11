@@ -109,7 +109,9 @@ input{font:inherit;color:inherit}
 .navfoot{border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1fr;gap:4px}
 .navfoot button{padding:11px 6px;font-size:13px;color:var(--muted);border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .navfoot #btnAch{color:var(--accent);font-weight:700}
+.navfoot #btnRemind{grid-column:1/-1;color:var(--accent);font-weight:700;background:var(--accent-soft);font-size:14px}
 .navfoot button:hover{background:var(--bg3)}
+.navfoot #btnRemind:hover{background:var(--accent-soft);opacity:.85}
 
 .search{padding:10px 12px;border-bottom:1px solid var(--line)}
 .search input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg2);font-size:15px}
@@ -118,6 +120,7 @@ input{font:inherit;color:inherit}
 .page.active{background:var(--sel)}
 .page b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .page small{display:block;color:var(--muted);font-size:12.5px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.page small .dueb{color:var(--accent);font-weight:700}
 .crumb{color:var(--accent)!important}
 .empty{padding:40px 24px;text-align:center;color:var(--muted)}
 
@@ -138,7 +141,7 @@ input{font:inherit;color:inherit}
 #editor .todo.done span{text-decoration:line-through;color:var(--muted)}
 #editor .todo span{flex:1;min-width:0;outline:none}
 .noPage{flex:1;display:grid;place-items:center;color:var(--muted);padding:24px;text-align:center}
-#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,20px);background:#222;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:50;max-width:90%;text-align:center}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,20px);background:#222;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:80;max-width:90%;text-align:center}
 #toast.on{opacity:.92;transform:translate(-50%,0)}
 #loading{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:40;color:var(--muted)}
 /* Markdown + recherche */
@@ -219,6 +222,85 @@ input{font:inherit;color:inherit}
 #achToast .ti{font-size:30px}
 #achToast small{display:block;color:var(--accent);font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em}
 
+/* ---------- Fiches mémoire (cartes recto / verso) ---------- */
+#cardsPane{flex:1;display:flex;flex-direction:column;min-height:0}
+.cp-top{display:flex;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--bg2);flex-wrap:wrap;margin-top:8px;border-top:1px solid var(--line)}
+.seg{display:flex;background:var(--bg3);border-radius:10px;padding:3px;flex:1;min-width:230px}
+.seg button{flex:1;padding:8px 6px;border-radius:8px;font-size:13.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+.seg button.on{background:var(--bg);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.cp-study{padding:10px 14px;background:var(--accent);color:var(--on-accent);border-radius:10px;font-weight:700;white-space:nowrap}
+.cp-study:disabled{opacity:.4;cursor:default}
+.cp-stats{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px 0;font-size:12.5px;color:var(--muted)}
+.cp-stats span{background:var(--bg2);border:1px solid var(--line);border-radius:20px;padding:3px 10px}
+.cp-stats span.hot{background:var(--accent-soft);border-color:var(--accent);color:var(--text);font-weight:600}
+.cp-body{flex:1;overflow-y:auto;padding:12px 14px calc(60px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
+.cp-tools{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.btn2{padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg2);font-size:13.5px}
+.btn2:hover{background:var(--bg3)}
+.btn2.main{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:700}
+.btn2.on{border-color:var(--accent);color:var(--accent)}
+@media (min-width:900px){
+  .cp-top{padding-left:36px;padding-right:clamp(24px,6%,90px)}
+  .cp-stats,.cp-body{padding-left:36px;padding-right:clamp(24px,6%,90px)}
+}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.fc{perspective:1000px;cursor:pointer;user-select:none;-webkit-user-select:none}
+.fc-in{display:grid;transition:transform .5s cubic-bezier(.3,.7,.3,1);transform-style:preserve-3d;height:100%}
+.fc.flip .fc-in{transform:rotateY(180deg)}
+.fc-f{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:1px solid var(--line);border-radius:14px;padding:28px 14px 14px;display:flex;text-align:center;line-height:1.4;overflow:auto;white-space:pre-wrap;word-break:break-word;position:relative;min-height:140px;box-shadow:0 2px 6px rgba(0,0,0,.06)}
+.fc-f .t{margin:auto}
+.fc-front{background:var(--bg2)}
+.fc-back{background:var(--accent-soft);border-color:var(--accent);transform:rotateY(180deg)}
+.fc-tag{position:absolute;top:8px;left:12px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.fc-chip{position:absolute;top:6px;right:8px}
+.chip{font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg3);color:var(--muted);white-space:nowrap}
+.chip.due{background:var(--accent);color:var(--on-accent)}
+.chip.new{background:var(--mark-bg);color:var(--mark-fg)}
+.chip.ok{border:1px solid var(--accent);color:var(--accent);background:transparent}
+.fc.big .fc-f{min-height:240px;font-size:21px;padding:36px 22px 22px}
+.clist{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.crow{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding:11px 14px;border-bottom:1px solid var(--line);background:var(--bg)}
+.crow:last-child{border-bottom:0}
+.crow .cf{grid-column:1;grid-row:1;font-weight:600;white-space:pre-wrap;word-break:break-word}
+.crow .chip{grid-column:2;grid-row:1}
+.crow .cb{grid-column:1/-1;grid-row:2;color:var(--muted);white-space:pre-wrap;word-break:break-word}
+@media (min-width:640px){
+  .crow{grid-template-columns:1fr 1fr auto}
+  .crow .cb{grid-column:2;grid-row:1;color:var(--text)}
+  .crow .chip{grid-column:3}
+}
+.clist.hide .cb:not(.show){filter:blur(7px);cursor:pointer;user-select:none;-webkit-user-select:none}
+#cardsText{width:100%;min-height:42vh;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--text);padding:12px 14px;font:15px/1.8 ui-monospace,Menlo,Consolas,monospace;resize:vertical;white-space:pre;overflow:auto}
+#cardsText:focus{outline:2px solid var(--accent);border-color:transparent}
+.help{background:var(--bg2);border-radius:12px;padding:10px 14px;font-size:13.5px;color:var(--muted);margin-bottom:10px;line-height:1.55}
+.help code{background:var(--bg3);padding:1px 6px;border-radius:5px;color:var(--text);font-family:ui-monospace,Menlo,Consolas,monospace}
+.cp-count{font-size:12.5px;color:var(--muted);margin:8px 2px 0}
+/* Révision */
+.st-top{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:6px}
+.st-bar{margin-bottom:14px}
+.rate{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.rate button{padding:10px 2px;border-radius:12px;border:2px solid var(--line);background:var(--bg2);display:flex;flex-direction:column;gap:2px;align-items:center;font-weight:700;font-size:14px;min-width:0}
+.rate button small{font-weight:500;color:var(--muted);font-size:11.5px}
+.rate .r0{border-color:var(--danger)}
+.rate .r3{border-color:var(--accent)}
+.rate button:hover{background:var(--bg3)}
+.st-hint{text-align:center;color:var(--muted);font-size:13px;margin:12px 0 0}
+.done{text-align:center;padding:14px 4px}
+.done .big{font-size:52px;line-height:1.1}
+.sheet-body .done h3{justify-content:center}
+.rem-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:var(--bg2)}
+.rem-row .nm{flex:1;min-width:0}
+.rem-row .nm b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14.5px}
+.rem-row .nm small{color:var(--muted);font-size:12.5px}
+.set{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.set label{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.set input[type=time]{border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:6px 8px;color:var(--text)}
+.set input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
+.set .note{text-align:left}
+.set .cp-tools{margin:10px 0 0}
+.how{font-size:13.5px;color:var(--muted);line-height:1.6;margin:0;padding-left:18px}
+.how b{color:var(--text)}
+
 @media (max-width:899px){
   #app{display:block;position:relative}
   .col{position:absolute;inset:0;transform:translateX(100%);transition:transform .25s ease;border:0}
@@ -279,6 +361,7 @@ input{font:inherit;color:inherit}
     <div class="search"><input id="qNav" type="search" placeholder="🔍 Rechercher dans toutes les notes" autocomplete="off"></div>
     <div class="scroll" id="nav"></div>
     <div class="navfoot">
+      <button id="btnRemind">🧠 Rappels &amp; révision</button>
       <button id="btnAch">🏆 Succès</button>
       <button id="btnTheme">🎨 Thème</button>
       <button id="btnImportMd">⬆ Importer .md</button>
@@ -291,6 +374,7 @@ input{font:inherit;color:inherit}
     <div class="top">
       <button class="icon back" id="backNav" aria-label="Retour">‹</button>
       <h2 id="secTitle">Pages</h2>
+      <button class="icon" id="btnAddCards" title="Nouvelle fiche mémoire (cartes recto / verso)" aria-label="Nouvelle fiche mémoire">🃏</button>
       <button class="icon" id="btnAddPage" title="Nouvelle page" aria-label="Nouvelle page">＋</button>
     </div>
     <div class="search"><input id="q" type="search" placeholder="🔍 Rechercher dans mes notes"></div>
@@ -329,6 +413,19 @@ input{font:inherit;color:inherit}
     <div class="meta" id="meta"></div>
     <div id="editor" contenteditable="true" spellcheck="true"></div>
     <textarea id="mdBox" class="hidden" spellcheck="false" aria-label="Markdown"></textarea>
+    <!-- Fiche mémoire -->
+    <div id="cardsPane" class="hidden">
+      <div class="cp-top">
+        <div class="seg" id="cpTabs">
+          <button data-tab="cards">🗂 Cartes</button>
+          <button data-tab="list">☰ Liste</button>
+          <button data-tab="input">✏️ Saisie</button>
+        </div>
+        <button class="cp-study" id="cpStudy">🧠 Réviser</button>
+      </div>
+      <div class="cp-stats" id="cpStats"></div>
+      <div class="cp-body" id="cpBody"></div>
+    </div>
     <div class="noPage hidden" id="noPage">Sélectionnez ou créez une page<br>pour commencer à écrire ✍️</div>
   </section>
 </div>
@@ -364,10 +461,11 @@ const firebaseConfig = {
 /* ===================================================================== */
 
 const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
 const uid = () => Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4);
 const COLORS = ["#8b5cf6","#f97316","#10b981","#ef4444","#3b82f6","#eab308","#ec4899","#14b8a6"];
-const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const plain = html => { const d = document.createElement("div"); d.innerHTML = html.replace(/<img[^>]*>/gi, " "); return (d.textContent || "").replace(/​/g, "").replace(/\s+/g," ").trim(); };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const plain = html => { const d = document.createElement("div"); d.innerHTML = html.replace(/<img[^>]*>/gi, " "); return (d.textContent || "").replace(/\u200b/g, "").replace(/\s+/g," ").trim(); };
 const fmtDate = t => new Date(t).toLocaleString("fr-FR", { weekday:"long", day:"numeric", month:"long", year:"numeric", hour:"2-digit", minute:"2-digit" });
 const fmtShort = t => { const d = new Date(t), n = new Date(); return d.toDateString() === n.toDateString() ? d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}) : d.toLocaleDateString("fr-FR",{day:"numeric",month:"short"}); };
 let tt; function toast(m){ const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("on"), 2600); }
@@ -426,7 +524,7 @@ $("#btnLogout").onclick = async () => {
 /* ---------- État ---------- */
 let uidUser = null, unsubStruct = null, unsubPages = null;
 let struct = { notebooks: [] };               // [{id,name,color,sections:[{id,name}]}]
-const pages = new Map();                      // id -> {id,nb,sec,title,html,created,updated}
+const pages = new Map();                      // id -> {id,nb,sec,title,html,created,updated, type?:"cards", cards?:[...]}
 let sel = { nb: null, sec: null, page: null };
 let view = "nav", query = "", structReady = false, creatingStarter = false;
 const dirty = new Set(); let saveT = null;
@@ -485,6 +583,7 @@ function start(user){
   try { sel = { ...sel, ...JSON.parse(localStorage.getItem("notes.sel." + uidUser) || "{}") }; } catch {}
   pages.clear(); structReady = false; setView("nav");
   stats = null; statsDirty = false; lastLevel = 0; lastRank = -1; pagesSynced = false; renderAchBtn();
+  clearInterval(remT); remT = setInterval(remindTick, 60000);
 
   unsubStruct = onSnapshot(structRef(), snap => {
     if (!snap.exists()) {
@@ -506,14 +605,14 @@ function start(user){
       if (ch.type === "removed") { pages.delete(id); if (sel.page === id) { sel.page = null; refresh = true; } }
       else if (!dirty.has(id)) {   // ne jamais écraser une modification locale pas encore enregistrée
         pages.set(id, ch.doc.data());
-        const typing = [$("#editor"), $("#title"), $("#mdBox")].includes(document.activeElement);
+        const typing = [$("#editor"), $("#title"), $("#mdBox"), $("#cardsText")].includes(document.activeElement) || !!study;
         if (id === sel.page && !ch.doc.metadata.hasPendingWrites && !typing) refresh = true;
       }
     });
     pagesSynced = !snap.metadata.fromCache;
     setSync(snap.metadata.hasPendingWrites, snap.metadata.fromCache);
     renderNav(); renderPages(); if (refresh) renderEditor();
-    scheduleCheck();
+    scheduleCheck(); if (pagesSynced) remindTick();
   }, err => toast("Erreur de lecture : " + err.code));
 
   unsubStats = onSnapshot(statsRef(), snap => {
@@ -535,6 +634,7 @@ async function createStarter(){
 function stop(){
   unsubStruct?.(); unsubPages?.(); unsubStats?.(); unsubStruct = unsubPages = unsubStats = null; uidUser = null;
   for (const t of [saveT, readT, wcT, checkT]) clearTimeout(t);
+  clearInterval(remT); remT = null; study = null;
   saveT = readT = wcT = checkT = null; readFor = null; dirty.clear(); stats = null; closeModal();
 }
 if (configured) onAuthStateChanged(auth, u => { if (u) start(u); else { stop(); showAuth(); } });
@@ -546,6 +646,8 @@ function setSync(pending, cache){
 addEventListener("online", () => setSync(false, false)); addEventListener("offline", () => setSync(true, true));
 
 /* ---------- Rendu ---------- */
+const pgIcon = p => p.type === "cards" ? "🃏 " : "";
+const pgDate = p => p.type === "cards" ? cardsInfo(p) : esc(fmtShort(p.updated));
 function renderNav(){
   if (!structReady) return;
   if (query && isMobile()) {   // sur mobile : les résultats s'affichent directement sous la barre de recherche
@@ -574,26 +676,31 @@ function renderNav(){
 }
 function renderPages(){
   if (!structReady) return;
+  updateDue();
   const el = $("#pages"); let list;
   if (query) {
     const q = query.toLowerCase();
     list = [...pages.values()].filter(matches);
     $("#secTitle").textContent = `Résultats (${list.length})`;
   } else { list = secPages(); $("#secTitle").textContent = curSec()?.name || "Pages"; }
-  if (!list.length) { el.innerHTML = `<div class="empty">${query ? "Aucun résultat." : "Aucune page. Touchez ＋ pour en créer une."}</div>`; return; }
+  if (!list.length) { el.innerHTML = `<div class="empty">${query ? "Aucun résultat." : "Aucune page. Touchez ＋ pour une note, 🃏 pour une fiche mémoire."}</div>`; return; }
   list.sort(query ? rank : (a,b) => b.updated - a.updated);
   const crumb = p => { const nb = struct.notebooks.find(n => n.id === p.nb); return `${esc(nb?.name||"?")} › ${esc(nb?.sections.find(s => s.id===p.sec)?.name||"?")}`; };
   el.innerHTML = list.map(p => `<div class="page ${p.id===sel.page?"active":""}" data-nb="${p.nb}" data-sec="${p.sec}" data-page="${p.id}">
     ${query ? `<small class="crumb">${crumb(p)}</small>` : ""}
-    <b>${hl(p.title || "Sans titre")}</b><small>${fmtShort(p.updated)} · ${hl(snippet(p))}</small></div>`).join("");
+    <b>${pgIcon(p)}${hl(p.title || "Sans titre")}</b><small>${pgDate(p)} · ${hl(snippet(p))}</small></div>`).join("");
 }
 function renderEditor(){
-  const p = curPage(), has = !!p;
-  ["#editor","#toolbar","#meta","#title","#btnSave","#btnDelPage"].forEach(s => $(s).classList.toggle("hidden", !has));
+  const p = curPage(), has = !!p, isC = has && p.type === "cards";
+  ["#meta","#title","#btnSave","#btnDelPage"].forEach(s => $(s).classList.toggle("hidden", !has));
+  ["#editor","#toolbar"].forEach(s => $(s).classList.toggle("hidden", !has || isC));
+  $("#cardsPane").classList.toggle("hidden", !isC);
   $("#noPage").classList.toggle("hidden", has);
   mdMode = false; $("#mdBox").classList.add("hidden"); $("#btnMd").classList.remove("on");
   if (!has) { watchRead(); return; }
-  $("#title").value = p.title; $("#editor").innerHTML = p.html; setMeta(); baseWords(p); watchRead();
+  $("#title").value = p.title; $("#title").placeholder = isC ? "Titre de la fiche mémoire" : "Titre de la page";
+  $("#editor").innerHTML = isC ? "" : p.html; setMeta(); baseWords(p); watchRead();
+  if (isC) renderCards();
 }
 
 /* ---------- Navigation / actions ---------- */
@@ -635,19 +742,21 @@ async function menu(type, id){
     try { await batch.commit(); await saveStruct(); } catch (e) { toast("Erreur : " + e.code); }
   }
 }
-$("#btnAddPage").onclick = () => {
+function newPage(extra){
   if (!curSec()) return;
-  const now = Date.now(), p = { id: uid(), nb: sel.nb, sec: sel.sec, title: "", html: "", created: now, updated: now };
+  const now = Date.now(), p = { id: uid(), nb: sel.nb, sec: sel.sec, title: "", html: "", created: now, updated: now, ...(extra || {}) };
   pages.set(p.id, p); sel.page = p.id; query = ""; $("#q").value = ""; $("#qNav").value = ""; saveSel(); queuePage(p.id);
   renderAll(); setView("edit"); setTimeout(() => $("#title").focus(), 300);
-};
+}
+$("#btnAddPage").onclick = () => newPage();
+$("#btnAddCards").onclick = () => newPage({ type: "cards", cards: [] });
 $("#pages").addEventListener("click", e => {
   const el = e.target.closest("[data-page]"); if (!el) return;
   sel = { nb: el.dataset.nb, sec: el.dataset.sec, page: el.dataset.page }; saveSel();
   renderNav(); renderPages(); renderEditor(); setView("edit");
 });
 $("#btnDelPage").onclick = async () => {
-  const p = curPage(); if (!p || !confirm("Supprimer cette page ?")) return;
+  const p = curPage(); if (!p || !confirm(p.type === "cards" ? "Supprimer cette fiche mémoire et toutes ses cartes ?" : "Supprimer cette page ?")) return;
   pages.delete(p.id); dirty.delete(p.id); sel.page = null; renderAll(); setView("pages");
   try { await deleteDoc(pageRef(p.id)); } catch (e) { toast("Erreur : " + e.code); }
 };
@@ -672,7 +781,8 @@ const plainCache = new Map();
 function ptxt(p){
   const c = plainCache.get(p.id);
   if (c && c.u === p.updated && c.l === p.html.length) return c.t;
-  const t = plain(p.html); plainCache.set(p.id, { u: p.updated, l: p.html.length, t }); return t;
+  const t = p.type === "cards" ? (p.cards || []).map(k => k.f + " " + k.b).join(" · ") : plain(p.html);
+  plainCache.set(p.id, { u: p.updated, l: p.html.length, t }); return t;
 }
 function matches(p){
   const t = terms(); if (!t.length) return true;
@@ -700,7 +810,7 @@ function resultHtml(p){
   const nb = struct.notebooks.find(n => n.id === p.nb), sc = nb?.sections.find(s => s.id === p.sec);
   return `<div class="page ${p.id===sel.page?"active":""}" data-nb="${p.nb}" data-sec="${p.sec}" data-page="${p.id}">
     <small class="crumb">${esc(nb?.name||"?")} › ${esc(sc?.name||"?")}</small>
-    <b>${hl(p.title || "Sans titre")}</b><small>${fmtShort(p.updated)} · ${hl(snippet(p))}</small></div>`;
+    <b>${pgIcon(p)}${hl(p.title || "Sans titre")}</b><small>${pgDate(p)} · ${hl(snippet(p))}</small></div>`;
 }
 function openPageEl(el){
   sel = { nb: el.dataset.nb, sec: el.dataset.sec, page: el.dataset.page }; saveSel();
@@ -783,7 +893,7 @@ function htmlToMd(html, embed){
   const imgSrc = src => { if (embed || !/^data:/.test(src)) return src; imgStore.push(src); return "img:" + (imgStore.length - 1); };
   const wrap = (s, mk) => { const m = /^(\s*)([\s\S]*?)(\s*)$/.exec(s); return m[2] ? m[1] + mk + m[2] + mk + m[3] : s; };
   const inl = n => {
-    if (n.nodeType === 3) return n.textContent.replace(/​/g, "");
+    if (n.nodeType === 3) return n.textContent.replace(/\u200b/g, "");
     if (n.nodeType !== 1) return "";
     const k = () => [...n.childNodes].map(inl).join("");
     switch (n.tagName) {
@@ -819,7 +929,7 @@ function htmlToMd(html, embed){
   const blocks = [];
   const walk = parent => {
     let buf = "";
-    const flushBuf = () => { const s = buf.replace(/​/g, "").trim(); if (s) blocks.push({ s }); buf = ""; };
+    const flushBuf = () => { const s = buf.replace(/\u200b/g, "").trim(); if (s) blocks.push({ s }); buf = ""; };
     for (const n of parent.childNodes) {
       if (n.nodeType === 1 && /^(H[1-6]|P|DIV|UL|OL|BLOCKQUOTE|PRE|HR)$/.test(n.tagName)) {
         flushBuf(); const t = n.tagName;
@@ -833,7 +943,7 @@ function htmlToMd(html, embed){
           blocks.push({ s: "- [" + (cb && cb.checked ? "x" : " ") + "] " + inl(n.querySelector("span") || n).trim(), todo: true });
         }
         else if (n.querySelector("h1,h2,h3,ul,ol,blockquote,pre,.todo,div,p")) walk(n);
-        else { const s = inl(n).replace(/​/g, "").trim(); if (s) blocks.push({ s }); }
+        else { const s = inl(n).replace(/\u200b/g, "").trim(); if (s) blocks.push({ s }); }
       } else buf += inl(n);
     }
     flushBuf();
@@ -904,7 +1014,7 @@ $("#editor").addEventListener("keydown", e => {            // "# " "- " "1. " ">
     let line = ctx.n; while (line.parentNode !== $("#editor")) line = line.parentNode;
     const rest = ctx.n.textContent.slice(t.length), d = makeTodoEl(), span = d.querySelector("span");
     if (line === ctx.n || line.textContent === ctx.n.textContent) {      // ligne = uniquement ce texte : on la remplace
-      span.textContent = rest || "​"; line.replaceWith(d); placeCaret(span.firstChild, rest ? 0 : 1);
+      span.textContent = rest || "\u200b"; line.replaceWith(d); placeCaret(span.firstChild, rest ? 0 : 1);
     } else {                                                             // sinon : on retire le marqueur et on ajoute une case vide
       ctx.n.textContent = rest; line.after(d); placeCaret(span.firstChild, 1);
     }
@@ -941,13 +1051,14 @@ $("#editor").addEventListener("paste", e => {              // coller du texte Ma
 /* ---------- Éditeur ---------- */
 function touch(){
   const p = curPage(); if (!p) return;
+  if (p.type === "cards") { p.title = $("#title").value; p.updated = Date.now(); queuePage(p.id); return; }   // fiche mémoire : seul le titre passe par ici
   p.html = mdMode ? mdToHtml($("#mdBox").value) : $("#editor").innerHTML; p.title = $("#title").value; p.updated = Date.now();
   queuePage(p.id); markEdit();
 }
 let listT; const refreshLists = () => { clearTimeout(listT); listT = setTimeout(() => { renderPages(); renderNav(); }, 500); };
 $("#editor").addEventListener("input", () => { touch(); refreshLists(); });
 $("#title").addEventListener("input", () => { touch(); refreshLists(); });
-$("#title").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); (mdMode ? $("#mdBox") : $("#editor")).focus(); } });
+$("#title").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); const p = curPage(); if (p?.type === "cards") { ($("#cardsText") || $("#cpBody")).focus?.(); return; } (mdMode ? $("#mdBox") : $("#editor")).focus(); } });
 $("#editor").addEventListener("change", e => {
   if (e.target.type === "checkbox") {
     e.target.toggleAttribute("checked", e.target.checked);
@@ -1017,7 +1128,7 @@ $("#btnExport").onclick = () => {
   a.download = `notes-${new Date().toISOString().slice(0,10)}.json`; a.click();
 };
 // On quitte l'onglet / l'appli : on enregistre pour ne rien perdre
-document.addEventListener("visibilitychange", () => { if (document.hidden) { clearTimeout(readT); readFor = null; flushSave(); } else watchRead(); });
+document.addEventListener("visibilitychange", () => { if (document.hidden) { clearTimeout(readT); readFor = null; flushSave(); } else { watchRead(); remindTick(); } });
 addEventListener("pagehide", () => flushSave());
 
 /* ============================================================
@@ -1067,18 +1178,323 @@ function renderThemes(){
 }
 
 /* ============================================================
-   Fenêtre (succès / thème)
+   Fenêtre (succès / thème / révision / rappels)
    ============================================================ */
 let modalKind = null;
 function openModal(kind, title){ modalKind = kind; $("#mTitle").textContent = title; $("#modal").classList.remove("hidden"); renderModal(); $("#mBody").scrollTop = 0; }
-function closeModal(){ modalKind = null; $("#modal").classList.add("hidden"); }
-function renderModal(){ if (modalKind === "ach") renderAch(); else if (modalKind === "theme") renderThemes(); }
+function closeModal(){ if (modalKind === "study") endStudy(); modalKind = null; $("#modal").classList.add("hidden"); }
+function renderModal(){ if (modalKind === "ach") renderAch(); else if (modalKind === "theme") renderThemes(); else if (modalKind === "study") renderStudy(); else if (modalKind === "remind") renderRemind(); }
 $("#mClose").onclick = closeModal;
 $("#modal").addEventListener("click", e => { if (e.target.id === "modal") closeModal(); });
 $("#mBody").addEventListener("click", e => { const t = e.target.closest("[data-theme-opt]"); if (t) { applyTheme(t.dataset.themeOpt); renderThemes(); } });
 addEventListener("keydown", e => { if (e.key === "Escape" && modalKind) closeModal(); });
 $("#btnTheme").onclick = () => openModal("theme", "🎨 Thème");
 $("#btnAch").onclick = () => openModal("ach", "🏆 Succès");
+$("#btnRemind").onclick = () => openModal("remind", "🧠 Rappels & révision");
+
+/* ============================================================
+   Fiches mémoire : cartes recto / verso + révision espacée + rappels
+   Chaque fiche est une page { type:"cards", cards:[{id,f,b,ease,ivl,reps,lapses,due,last}] }
+   (synchronisée comme les autres notes). Saisie : une carte par ligne « recto :: verso ».
+   ============================================================ */
+const MIN = 6e4, HOUR = 36e5, DAY = 864e5, SESSION_MAX = 30;
+const newCard = (f, b) => ({ id: uid(), f, b, ease: 2.5, ivl: 0, reps: 0, lapses: 0, due: 0, last: 0 });
+const isDue = c => !c.last || (c.due || 0) <= Date.now();
+const sod = t => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
+const cardsOf = p => p.cards || (p.cards = []);
+function dueLabel(due){
+  const now = Date.now(); if (due <= now) return "maintenant";
+  const dd = Math.round((sod(due) - sod(now)) / DAY);
+  if (dd <= 0 || due - now < 2 * HOUR) { const m = Math.max(1, Math.round((due - now) / MIN)); return m < 60 ? m + " min" : Math.round(m / 60) + " h"; }
+  if (dd === 1) return "demain";
+  return dd < 30 ? dd + " j" : Math.round(dd / 30) + " mois";
+}
+function chipOf(c){
+  if (!c.last) return ["new", "Nouvelle"];
+  if ((c.due || 0) <= Date.now()) return ["due", "À revoir"];
+  return [c.ivl >= 21 ? "ok" : "", "dans " + dueLabel(c.due)];
+}
+const chipHtml = (c, cls) => { const [k, t] = chipOf(c); return `<span class="chip ${k} ${cls || ""}">${t}</span>`; };
+
+/* planification (répétition espacée type SM-2 simplifiée) : r = 0 à revoir · 1 difficile · 2 bien · 3 facile */
+function nextState(c, r){
+  const now = Date.now(), s = { ease: c.ease || 2.5, ivl: c.ivl || 0, reps: c.reps || 0, lapses: c.lapses || 0, due: 0 };
+  const dayDue = n => { const d = sod(now + n * DAY); return d - now < n * DAY / 2 ? d + DAY : d; };   // jamais « dans 46 min » quand on révise tard le soir
+  if (r === 0) { s.lapses++; s.reps = 0; s.ivl = 0; s.ease = Math.max(1.3, s.ease - .2); s.due = now + 10 * MIN; return s; }
+  if (r === 1) {
+    s.ease = Math.max(1.3, s.ease - .15);
+    if (!s.reps) { s.ivl = 0; s.due = now + HOUR; return s; }
+    s.ivl = Math.max(1, Math.round(s.ivl * 1.2));
+  } else if (r === 2) {
+    s.ivl = s.reps === 0 ? 1 : s.reps === 1 ? 3 : Math.max(1, Math.round(s.ivl * s.ease));
+  } else {
+    s.ivl = s.reps === 0 ? 4 : Math.max(2, Math.round(Math.max(s.ivl, 1) * s.ease * 1.3)); s.ease += .15;
+  }
+  s.reps++; s.due = dayDue(s.ivl); return s;
+}
+function dueList(pid){
+  const out = [];
+  for (const p of pages.values()) {
+    if (p.type !== "cards" || (pid && p.id !== pid)) continue;
+    for (const c of cardsOf(p)) if (isDue(c)) out.push({ pid: p.id, cid: c.id, due: c.due || 0, nw: !c.last });
+  }
+  return out;
+}
+const dueCount = () => dueList().length;
+function cardsInfo(p){
+  const n = cardsOf(p).length, d = dueList(p.id).length;
+  return `${n} carte${n > 1 ? "s" : ""}` + (d ? ` · <span class="dueb">${d} à revoir</span>` : "");
+}
+function updateDue(){
+  const n = dueCount(), b = $("#btnRemind");
+  b.textContent = n ? `🧠 ${n} carte${n > 1 ? "s" : ""} à réviser` : "🧠 Rappels & révision";
+  document.title = n ? `(${n}) Mes Notes` : "Mes Notes";
+  try { if (navigator.setAppBadge) (n ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => {}); } catch {}
+}
+
+/* ---- Fiche ouverte : onglets Cartes / Liste / Saisie ---- */
+let cardTab = "cards", cardsFor = null, cardHide = false, inputBase = "";
+const cardView = () => { try { return localStorage.getItem("notes.cardview") === "list" ? "list" : "cards"; } catch { return "cards"; } };
+const faceHtml = (c, big) => `<div class="fc${big ? " big" : ""}" ${big ? 'data-act="flip"' : ""} data-cid="${c.id}"><div class="fc-in">
+  <div class="fc-f fc-front"><span class="fc-tag">Recto</span>${big ? "" : chipHtml(c, "fc-chip")}<span class="t">${esc(c.f)}</span></div>
+  <div class="fc-f fc-back"><span class="fc-tag">Verso</span><span class="t">${esc(c.b)}</span></div></div></div>`;
+const cardsToText = p => cardsOf(p).map(c => c.f.replace(/\s*\n\s*/g, " ") + " :: " + c.b.replace(/\s*\n\s*/g, " ")).join("\n");
+function parseCards(text){   // -> {list:[[f,b]], err:"…"|null}
+  const list = []; const lines = text.replace(/\r\n?/g, "\n").split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const ln = lines[i]; if (!ln.trim()) continue;
+    const m = /^(.+?)\s*(?:::|\t| \| )\s*(.+)$/.exec(ln.trim());
+    if (!m) return { list, err: `Ligne ${i + 1} : séparez le recto et le verso par « :: »` };
+    list.push([m[1].trim(), m[2].trim()]);
+  }
+  return { list, err: null };
+}
+function renderCards(){
+  const p = curPage(); if (!p || p.type !== "cards") return;
+  if (cardsFor !== p.id) { cardsFor = p.id; cardTab = cardsOf(p).length ? cardView() : "input"; cardHide = false; }
+  const cs = cardsOf(p), now = Date.now();
+  const nDue = cs.filter(c => c.last && (c.due || 0) <= now).length, nNew = cs.filter(c => !c.last).length, nOk = cs.filter(c => c.last && c.ivl >= 21).length;
+  const st = $("#cpStudy"), dd = nDue + nNew;
+  st.innerHTML = `🧠 Réviser${dd ? ` <b>${dd}</b>` : ""}`; st.disabled = !dd;
+  $$("#cpTabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === cardTab));
+  $("#cpStats").innerHTML = `<span>${cs.length} carte${cs.length > 1 ? "s" : ""}</span>` + (nDue ? `<span class="hot">${nDue} à revoir</span>` : "") +
+    (nNew ? `<span>${nNew} nouvelle${nNew > 1 ? "s" : ""}</span>` : "") + (nOk ? `<span>${nOk} maîtrisée${nOk > 1 ? "s" : ""}</span>` : "");
+  const body = $("#cpBody");
+  if (cardTab === "input") {
+    inputBase = cardsToText(p);
+    body.innerHTML = `<div class="help">Une carte par ligne : <code>recto :: verso</code><br>Exemple : <code>capital de la France :: Paris</code> — vous pouvez aussi séparer avec une tabulation (copier-coller depuis un tableur). Modifier une ligne garde la progression de la carte ; supprimer une ligne supprime la carte.</div>
+      <textarea id="cardsText" spellcheck="false" placeholder="capital de la France :: Paris&#10;to run (anglais) :: courir&#10;formule de l'eau :: H₂O" aria-label="Liste des cartes"></textarea>
+      <div class="cp-count" id="cpCount"></div>
+      <div class="cp-tools" style="margin-top:12px"><button class="btn2 main" data-act="save">✔ Valider la liste</button>
+      <button class="btn2" data-act="swap">⇄ Inverser recto / verso</button>
+      <button class="btn2" data-act="reset">↺ Remettre à zéro la progression</button></div>`;
+    $("#cardsText").value = inputBase; countInput(); return;
+  }
+  if (!cs.length) { body.innerHTML = `<div class="empty">Aucune carte pour l'instant.<br><br><button class="btn2 main" data-tab="input">✏️ Saisir la liste des cartes</button></div>`; return; }
+  if (cardTab === "cards") {
+    body.innerHTML = `<div class="cp-tools"><button class="btn2" data-act="flipall">⇄ Tout retourner</button><span class="cp-count" style="margin:auto 0">Touchez une carte pour la retourner.</span></div>
+      <div class="cgrid">${cs.map(c => faceHtml(c)).join("")}</div>`;
+  } else {
+    body.innerHTML = `<div class="cp-tools"><button class="btn2 ${cardHide ? "on" : ""}" data-act="hide">${cardHide ? "👁 Montrer les versos" : "🙈 Masquer les versos (s'auto-tester)"}</button></div>
+      <div class="clist ${cardHide ? "hide" : ""}">${cs.map(c => `<div class="crow"><div class="cf">${esc(c.f)}</div><div class="cb">${esc(c.b)}</div>${chipHtml(c)}</div>`).join("")}</div>`;
+  }
+}
+function countInput(){
+  const el = $("#cardsText"), out = $("#cpCount"); if (!el || !out) return;
+  const r = parseCards(el.value);
+  out.textContent = r.err ? "⚠ " + r.err : `${r.list.length} carte${r.list.length > 1 ? "s" : ""} détectée${r.list.length > 1 ? "s" : ""}`;
+  out.style.color = r.err ? "var(--danger)" : "";
+}
+function saveCardsList(){
+  const p = curPage(); if (!p || p.type !== "cards") return false;
+  const r = parseCards($("#cardsText").value);
+  if (r.err) { toast("⚠ " + r.err); return false; }
+  const old = [...cardsOf(p)], used = new Set(), res = r.list.map(([f, b]) => ({ f, b, o: null }));
+  const take = (it, fn) => { if (it.o) return; const o = old.find(c => !used.has(c.id) && fn(c)); if (o) { used.add(o.id); it.o = o; } };
+  res.forEach(it => take(it, c => c.f === it.f && c.b === it.b));    // 1) carte identique
+  res.forEach(it => take(it, c => c.f === it.f));                    // 2) même recto (verso modifié)
+  res.forEach(it => take(it, c => c.b === it.b));                    // 3) même verso (recto modifié / inversé)
+  p.cards = res.map(it => it.o ? { ...it.o, f: it.f, b: it.b } : newCard(it.f, it.b));
+  p.updated = Date.now(); queuePage(p.id); flushSave();
+  cardTab = p.cards.length ? cardView() : "input"; renderCards(); renderPages();
+  toast(`✔ ${p.cards.length} carte${p.cards.length > 1 ? "s" : ""} enregistrée${p.cards.length > 1 ? "s" : ""}`);
+  return true;
+}
+function goTab(tab){
+  if (cardTab === "input" && tab !== "input" && $("#cardsText") && $("#cardsText").value !== inputBase) {
+    if (parseCards($("#cardsText").value).err) { if (!confirm("La saisie contient une erreur et ne sera pas enregistrée. Quitter quand même ?")) return; }
+    else if (confirm("Enregistrer la liste avant de quitter la saisie ?")) { if (!saveCardsList()) return; }
+  }
+  cardTab = tab; if (tab !== "input") { try { localStorage.setItem("notes.cardview", tab); } catch {} }
+  renderCards();
+}
+$("#cpTabs").addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if (b && b.dataset.tab !== cardTab) goTab(b.dataset.tab); });
+$("#cpStudy").onclick = () => { const p = curPage(); if (p) startStudy(p.id); };
+$("#cpBody").addEventListener("input", e => { if (e.target.id === "cardsText") countInput(); });
+$("#cpBody").addEventListener("keydown", e => { if (e.target.id === "cardsText" && (e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); saveCardsList(); } });
+$("#cpBody").addEventListener("click", e => {
+  const tab = e.target.closest("[data-tab]"); if (tab) return goTab(tab.dataset.tab);
+  const fc = e.target.closest(".fc"); if (fc) { fc.classList.toggle("flip"); return; }
+  const cb = e.target.closest(".clist.hide .cb"); if (cb) { cb.classList.toggle("show"); return; }
+  const a = e.target.closest("[data-act]"); if (!a) return;
+  const p = curPage(); if (!p) return;
+  switch (a.dataset.act) {
+    case "save": saveCardsList(); break;
+    case "swap": {
+      const r = parseCards($("#cardsText").value); if (r.err) return toast("⚠ " + r.err);
+      $("#cardsText").value = r.list.map(([f, b]) => b + " :: " + f).join("\n"); countInput(); toast("⇄ Inversé — validez pour enregistrer"); break;
+    }
+    case "reset":
+      if (!confirm("Remettre toutes les cartes à zéro (elles redeviennent « nouvelles ») ?")) return;
+      p.cards = cardsOf(p).map(c => ({ ...newCard(c.f, c.b), id: c.id })); queuePage(p.id); flushSave(); renderCards(); renderPages(); toast("↺ Progression remise à zéro"); break;
+    case "flipall": { const all = $$("#cpBody .fc"), on = all.some(x => !x.classList.contains("flip")); all.forEach(x => x.classList.toggle("flip", on)); break; }
+    case "hide": cardHide = !cardHide; renderCards(); break;
+  }
+});
+
+/* ---- Révision (fenêtre) ---- */
+let study = null;
+function shuffle(a){ for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const findCard = it => { const p = pages.get(it.pid), c = p && p.type === "cards" ? cardsOf(p).find(x => x.id === it.cid) : null; return c ? { p, c } : null; };
+function startStudy(pid){
+  const all = dueList(pid);
+  if (!all.length) return toast("🎉 Rien à réviser pour le moment");
+  const rev = shuffle(all.filter(x => !x.nw)).sort((a, b) => a.due - b.due), nw = shuffle(all.filter(x => x.nw));
+  const q = [...rev, ...nw].slice(0, SESSION_MAX);
+  study = { q, total: q.length, cleared: 0, flip: false, pages: new Set(), counts: [0, 0, 0, 0], fin: false, all: all.length, pid: pid || null };
+  openModal("study", pid ? "🧠 Révision · " + (pages.get(pid)?.title || "Fiche") : "🧠 Révision");
+}
+const rateHtml = () => {
+  const it = study.q[0], f = it && findCard(it); if (!f) return "";
+  const names = ["À revoir", "Difficile", "Bien", "Facile"];
+  return `<div class="rate">${names.map((n, r) => `<button class="r${r}" data-act="rate" data-r="${r}">${n}<small>${dueLabel(nextState(f.c, r).due)}</small></button>`).join("")}</div>`;
+};
+function renderStudy(){
+  const b = $("#mBody"); if (!study) { b.innerHTML = ""; return; }
+  while (study.q.length && !findCard(study.q[0])) study.q.shift();
+  if (!study.q.length) { finishStudy(); return renderDone(); }
+  const { c } = findCard(study.q[0]);
+  b.innerHTML = `<div class="st-top"><span>Carte ${Math.min(study.cleared + 1, study.total)} / ${study.total}</span><span>${study.all > study.total ? `session de ${study.total} sur ${study.all}` : ""}</span></div>
+    <div class="bar st-bar"><i style="width:${Math.round(study.cleared / study.total * 100)}%"></i></div>
+    ${faceHtml(c, true)}
+    <div id="stAct">${study.flip ? rateHtml() : '<p class="st-hint">Touchez la carte (ou espace) pour voir la réponse</p>'}</div>`;
+  if (study.flip) $("#mBody .fc").classList.add("flip");
+}
+function doFlip(){
+  if (!study || study.flip || !study.q.length) return;
+  study.flip = true; $("#mBody .fc")?.classList.add("flip"); $("#stAct").innerHTML = rateHtml();
+}
+function rate(r){
+  if (!study || !study.flip) return;
+  const it = study.q[0], f = it && findCard(it); study.flip = false;
+  if (f) {
+    Object.assign(f.c, nextState(f.c, r), { last: Date.now() });
+    study.pages.add(f.p.id); study.counts[r]++; queuePage(f.p.id);
+    study.q.shift();
+    if (r === 0) study.q.push(it); else study.cleared++;
+  } else study.q.shift();
+  renderStudy();
+}
+function finishStudy(){
+  if (!study || study.fin) return; study.fin = true;
+  for (const id of study.pages) { const p = pages.get(id); if (p) registerRead(p); }   // compte comme « relecture » pour les succès
+  flushSave();
+}
+function renderDone(){
+  const nextDue = [...pages.values()].flatMap(p => p.type === "cards" ? cardsOf(p).filter(c => c.last && c.due > Date.now()).map(c => c.due) : []).sort((a, b) => a - b)[0];
+  const left = dueCount(), n = study.counts.reduce((a, b) => a + b, 0);
+  $("#mBody").innerHTML = `<div class="done"><div class="big">🎉</div><h3>${n ? "Session terminée !" : "Rien à réviser"}</h3>
+    <p style="color:var(--muted);margin:4px 0 0">${n} réponse${n > 1 ? "s" : ""} enregistrée${n > 1 ? "s" : ""}</p>
+    <div class="stats4">${["À revoir", "Difficile", "Bien", "Facile"].map((l, i) => `<div class="stat"><b>${study.counts[i]}</b><small>${l}</small></div>`).join("")}</div>
+    <p class="note">${left ? `Il reste ${left} carte${left > 1 ? "s" : ""} à réviser.` : nextDue ? `Prochaine carte à revoir : ${dueLabel(nextDue)}.` : ""}</p>
+    ${left ? '<button class="primary" data-act="again">Continuer</button>' : ""}
+    <button class="primary" style="background:var(--bg3);color:var(--text)" data-act="close">Fermer</button></div>`;
+}
+function endStudy(){
+  if (!study) return;
+  if (uidUser) finishStudy();
+  study = null;
+  if (!uidUser) return;
+  flushSave(); updateDue(); renderPages(); if (curPage()?.type === "cards") renderCards();
+}
+addEventListener("keydown", e => {
+  if (modalKind !== "study" || !study || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key === " " || e.key === "Enter") { if (!study.flip && study.q.length) { e.preventDefault(); doFlip(); } }
+  else if (study.flip && /^[1-4]$/.test(e.key)) rate(+e.key - 1);
+});
+
+/* ---- Rappels ---- */
+let remT = null;
+const remCfg = () => { try { return { on: false, t: "09:00", last: "", ...JSON.parse(localStorage.getItem("notes.remind") || "{}") }; } catch { return { on: false, t: "09:00", last: "" }; } };
+const setRem = patch => { try { localStorage.setItem("notes.remind", JSON.stringify({ ...remCfg(), ...patch })); } catch {} };
+const notifState = () => !("Notification" in window) ? "indisponible" : Notification.permission;
+function notify(title, body){
+  toast("🧠 " + body);
+  try { if ("Notification" in window && Notification.permission === "granted") new Notification(title, { body, tag: "notes-review", icon: undefined }); } catch {}
+}
+function remindTick(){
+  if (!uidUser) return;
+  updateDue();
+  const cfg = remCfg(); if (!cfg.on || !pages.size) return;
+  const n = dueCount(); if (!n) return;
+  const d = new Date(), [h, m] = cfg.t.split(":").map(Number);
+  if (cfg.last === today() || d.getHours() * 60 + d.getMinutes() < h * 60 + m) return;
+  setRem({ last: today() });
+  notify("🧠 Mes Notes — à réviser", `${n} carte${n > 1 ? "s" : ""} à réviser aujourd'hui`);
+}
+function downloadIcs(){
+  const cfg = remCfg(), [h, m] = cfg.t.split(":").map(Number), d = new Date();
+  if (d.getHours() * 60 + d.getMinutes() >= h * 60 + m) d.setDate(d.getDate() + 1);
+  const ymd = d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()), hm = pad2(h) + pad2(m) + "00";
+  const end = pad2(h) + pad2(Math.min(59, m + 15)) + "00", stamp = new Date().toISOString().replace(/[-:]|\.\d+/g, "");
+  const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Mes Notes//FR", "CALSCALE:GREGORIAN", "BEGIN:VEVENT", "UID:revision-" + uid() + "@mes-notes",
+    "DTSTAMP:" + stamp, `DTSTART:${ymd}T${hm}`, `DTEND:${ymd}T${end}`, "RRULE:FREQ=DAILY", "SUMMARY:🧠 Réviser mes fiches mémoire",
+    "DESCRIPTION:Ouvrez Mes Notes pour réviser vos cartes : " + location.href.split("#")[0], "URL:" + location.href.split("#")[0],
+    "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:Réviser mes fiches mémoire", "TRIGGER:PT0M", "END:VALARM", "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" })); a.download = "rappel-revision.ics"; a.click();
+}
+function renderRemind(){
+  const cfg = remCfg(), rows = [...pages.values()].filter(p => p.type === "cards").map(p => ({ p, d: dueList(p.id).length, n: cardsOf(p).length })).sort((a, b) => b.d - a.d || a.p.title.localeCompare(b.p.title));
+  const total = rows.reduce((s, r) => s + r.d, 0);
+  const nextDue = rows.flatMap(r => cardsOf(r.p).filter(c => c.last && c.due > Date.now()).map(c => c.due)).sort((a, b) => a - b)[0];
+  const ns = notifState(), nsTxt = { granted: "✔ notifications autorisées", denied: "✖ notifications bloquées par le navigateur", default: "🔔 Autoriser les notifications", "indisponible": "notifications indisponibles ici" }[ns];
+  $("#mBody").innerHTML = `<div class="lvl"><div class="lvl-n">🧠</div><div class="lvl-t"><b>${total ? total + " carte" + (total > 1 ? "s" : "") + " à réviser" : "Tout est à jour 🎉"}</b>
+      <small>${rows.length} fiche${rows.length > 1 ? "s" : ""} mémoire${!total && nextDue ? " · prochaine carte : " + dueLabel(nextDue) : ""}</small>
+      <button class="primary" style="margin-top:0" data-act="studyAll" ${total ? "" : "disabled"}>Commencer la révision</button></div></div>
+    <h3>Mes fiches<small>touchez pour réviser</small></h3>` +
+    (rows.length ? rows.map(({ p, d, n }) => `<div class="rem-row"><span class="nm"><b>🃏 ${esc(p.title || "Sans titre")}</b><small>${n} carte${n > 1 ? "s" : ""} · ${d ? d + " à revoir" : "à jour"}</small></span>
+      <button class="btn2" data-act="openPage" data-id="${p.id}">Ouvrir</button><button class="btn2 main" data-act="studyPage" data-id="${p.id}" ${d ? "" : "disabled style='opacity:.4'"}>Réviser</button></div>`).join("")
+      : `<div class="empty" style="padding:18px">Aucune fiche mémoire. Dans une section, touchez 🃏 pour en créer une.</div>`) +
+    `<h3>Rappel quotidien</h3><div class="set"><label><input type="checkbox" id="remOn" ${cfg.on ? "checked" : ""}> Me rappeler chaque jour à <input type="time" id="remTime" value="${esc(cfg.t)}"></label>
+      <p class="note">Le rappel s'affiche quand l'application est ouverte (bandeau, notification et pastille sur l'icône si le navigateur le permet). Pour être prévenu même application fermée, ajoutez le rappel à votre calendrier.</p>
+      <div class="cp-tools"><button class="btn2" data-act="notifPerm" ${ns === "granted" || ns === "indisponible" ? "disabled" : ""}>${nsTxt}</button>
+      <button class="btn2" data-act="notifTest">Tester</button><button class="btn2" data-act="ics">📅 Ajouter à mon calendrier</button></div></div>
+    <h3>Comment ça marche</h3><ul class="how"><li>Après chaque carte, dites si vous la connaissiez : <b>À revoir</b> (dans 10 min), <b>Difficile</b>, <b>Bien</b> ou <b>Facile</b>.</li>
+    <li>Plus vous réussissez, plus la carte revient tard : demain, 3 jours, puis environ ×2,5 à chaque fois.</li><li>Une carte ratée repart de zéro : elle revient très vite.</li>
+    <li>Une session propose au plus ${SESSION_MAX} cartes ; les autres restent à réviser.</li></ul>`;
+}
+$("#mBody").addEventListener("click", e => {
+  const a = e.target.closest("[data-act]"); if (!a || a.disabled) return;
+  switch (a.dataset.act) {
+    case "flip": doFlip(); break;
+    case "rate": rate(+a.dataset.r); break;
+    case "close": closeModal(); break;
+    case "again": { const pid = study ? study.pid : null; endStudy(); startStudy(pid); break; }
+    case "studyAll": startStudy(null); break;
+    case "studyPage": startStudy(a.dataset.id); break;
+    case "openPage": { const p = pages.get(a.dataset.id); if (!p) break; closeModal(); sel = { nb: p.nb, sec: p.sec, page: p.id }; saveSel(); renderNav(); renderPages(); renderEditor(); setView("edit"); break; }
+    case "notifPerm": try { Notification.requestPermission().then(() => renderRemind()); } catch {} break;
+    case "notifTest": notify("🧠 Mes Notes — test", "Voici à quoi ressemble votre rappel"); break;
+    case "ics": downloadIcs(); toast("📅 Ouvrez le fichier pour l'ajouter à votre calendrier"); break;
+  }
+});
+$("#mBody").addEventListener("change", e => {
+  if (e.target.id === "remOn") {
+    setRem({ on: e.target.checked, last: "" });
+    if (e.target.checked && notifState() === "default") { try { Notification.requestPermission().then(() => modalKind === "remind" && renderRemind()); } catch {} }
+    remindTick();
+  } else if (e.target.id === "remTime" && /^\d\d:\d\d$/.test(e.target.value)) setRem({ t: e.target.value, last: "" });
+});
 
 /* ============================================================
    Succès : écrire plus, relire plus
@@ -1097,7 +1513,7 @@ const dayStr = d => d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(
 const today = () => dayStr(new Date());
 const prevDay = s => { const [y, m, d] = s.split("-").map(Number); return dayStr(new Date(y, m - 1, d - 1)); };
 const fmtN = n => Number(n).toLocaleString("fr-FR");
-const wordCount = t => { t = t.replace(/​/g, "").trim(); return t ? t.split(/\s+/).length : 0; };
+const wordCount = t => { t = t.replace(/\u200b/g, "").trim(); return t ? t.split(/\s+/).length : 0; };
 const wcCache = new Map();
 function pwords(p){
   const c = wcCache.get(p.id);
@@ -1168,7 +1584,7 @@ function markEdit(){
   }, 1500);
 }
 
-/* relecture : note affichée ≥ 8 s, sans modification, au moins 5 mots */
+/* relecture : note affichée ≥ 8 s, sans modification, au moins 5 mots (les fiches mémoire comptent via la révision) */
 const pageVisible = () => !document.hidden && !!curPage() && (!isMobile() || view === "edit");
 function watchRead(){
   const p = curPage();
@@ -1178,7 +1594,7 @@ function watchRead(){
   readT = setTimeout(() => {
     const q = curPage();
     if (!q || q.id !== p.id || !pageVisible()) { readFor = null; return; }
-    if (lastEdit > readOpen || pwords(q) < 5) return;
+    if (q.type === "cards" || lastEdit > readOpen || pwords(q) < 5) return;
     registerRead(q);
   }, READ_MS);
 }
@@ -1304,7 +1720,7 @@ function renderAch(){
     const list = ACH.filter(a => a.c === k), n = list.filter(a => stats.unlocked[a.id]).length;
     h += `<h3>${label}<small>${n} / ${list.length}</small></h3><div class="badges">` + list.map(badgeHtml).join("") + `</div>`;
   }
-  h += `<p class="note" style="margin-top:18px;text-align:left">Une relecture compte quand une note reste ouverte ${READ_MS / 1000} secondes sans être modifiée (une fois par note et par jour). Les mots comptent quand vous les écrivez. Les succès secrets se débloquent tout seuls : à vous de les trouver !</p>`;
+  h += `<p class="note" style="margin-top:18px;text-align:left">Une relecture compte quand une note reste ouverte ${READ_MS / 1000} secondes sans être modifiée (une fois par note et par jour) ou quand vous terminez une révision de fiche mémoire. Les mots comptent quand vous les écrivez. Les succès secrets se débloquent tout seuls : à vous de les trouver !</p>`;
   b.innerHTML = h;
 }
 renderAchBtn();
