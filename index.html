@@ -315,6 +315,23 @@ input{font:inherit;color:inherit}
 .pw-opt input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);flex:none}
 .pw-opt .pw-min{width:60px;padding:4px 6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font-size:14px}
 .pw-opt .pw-min:disabled,.pw-opt .pw-sym:disabled{opacity:.4}
+.qr-in{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg2);color:var(--text);font:15px ui-monospace,Menlo,Consolas,monospace;resize:vertical}
+.qr-in:focus{outline:2px solid var(--accent);border-color:transparent}
+.qr-prev{display:grid;place-items:center;margin:4px 0 8px;min-height:120px;text-align:center;color:var(--muted);font-size:14px}
+.qr-prev canvas{max-width:100%;height:auto;border:1px solid var(--line);border-radius:12px;transition:width .2s}
+.qr-wrap{display:grid;gap:14px}
+.sheet.wide{max-width:640px}
+@media (min-width:900px){
+  .sheet.wide{max-width:1020px;max-height:94vh}
+  .sheet.wide .sheet-body{padding-bottom:16px}
+  .qr-wrap{grid-template-columns:minmax(0,1fr) 400px;gap:28px;align-items:start}
+  .qr-right{position:sticky;top:0;border-left:1px solid var(--line);padding-left:24px}
+  .qr-prev{min-height:400px}
+  .qr-wrap .pw-row{margin-bottom:10px}
+}
+.qr-chips{display:flex;flex-wrap:wrap;gap:6px}
+.qr-chips .btn2{min-width:36px;padding:5px 8px}
+.pw-row input[type=color]{width:42px;height:34px;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
 .pw-opt .pw-sym{width:220px;max-width:100%;padding:5px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font:15px ui-monospace,Menlo,Consolas,monospace}
 
 @media (max-width:899px){
@@ -1199,7 +1216,7 @@ function renderThemes(){
    ============================================================ */
 let modalKind = null;
 function openModal(kind, title){ modalKind = kind; $("#mTitle").textContent = title; $("#modal").classList.remove("hidden"); renderModal(); $("#mBody").scrollTop = 0; }
-function closeModal(){ if (modalKind === "study") endStudy(); modalKind = null; $("#modal").classList.add("hidden"); }
+function closeModal(){ $(".sheet").classList.remove("wide"); if (modalKind === "study") endStudy(); modalKind = null; $("#modal").classList.add("hidden"); }
 function renderModal(){ if (modalKind === "ach") renderAch(); else if (modalKind === "theme") renderThemes(); else if (modalKind === "study") renderStudy(); else if (modalKind === "remind") renderRemind(); else if (modalKind === "tools") renderTools(); }
 $("#mClose").onclick = closeModal;
 $("#modal").addEventListener("click", e => { if (e.target.id === "modal") closeModal(); });
@@ -1770,12 +1787,11 @@ function pwShowStrength(){
   $("#pwStr").textContent = !s ? "Cochez au moins un type de caractère." : `Force : ${b < 50 ? "faible" : b < 80 ? "moyenne" : b < 110 ? "forte" : "très forte"} (${b} bits)`;
 }
 function pwRun(){ $("#pwOut").value = pwGenerate(pwCfg()); pwShowStrength(); }
-function renderTools(){
+function renderPwTool(){
   const c = pwCfg();
   const opt = (id, key, label, min) => `<div class="pw-opt"><label><input type="checkbox" id="${id}" ${c[key] ? "checked" : ""}>${label}</label>` +
     (min ? `<input class="pw-min" id="${min}" type="number" min="0" max="128" placeholder="min" value="${esc(c[min.replace("pwMin", "min")])}" ${c[key] ? "" : "disabled"} title="Nombre minimum (facultatif)">` : "") + `</div>`;
-  $("#mBody").innerHTML = `<div class="seg" style="margin-bottom:14px"><button class="on">🔑 Mot de passe</button></div>
-    <div class="pw-out"><input id="pwOut" spellcheck="false" autocomplete="off" aria-label="Mot de passe">
+  $("#toolBody").innerHTML = `<div class="pw-out"><input id="pwOut" spellcheck="false" autocomplete="off" aria-label="Mot de passe">
       <button class="btn2 main" id="pwCopy">Copier</button><button class="icon" id="pwNew" title="Nouveau" aria-label="Nouveau mot de passe">↻</button></div>
     <p class="pw-str" id="pwStr"></p>
     <div class="pw-row"><b>Longueur</b><input id="pwLen" type="number" min="4" max="128" step="1" value="${c.len}" inputmode="numeric"></div>
@@ -1814,6 +1830,136 @@ $("#mBody").addEventListener("click", async e => {
     try { await navigator.clipboard.writeText(v); } catch { $("#pwOut").select(); document.execCommand("copy"); }
     toast("📋 Mot de passe copié");
   }
+});
+
+/* ============================================================
+   Outils : onglets + QR code
+   (bibliothèque qrcode-generator chargée à la demande)
+   ============================================================ */
+let toolTab = "pw";
+function renderTools(){
+  $("#mBody").innerHTML = `<div class="seg" style="margin-bottom:14px"><button data-tool="pw" class="${toolTab === "pw" ? "on" : ""}">🔑 Mot de passe</button><button data-tool="qr" class="${toolTab === "qr" ? "on" : ""}">▦ QR code</button></div><div id="toolBody"></div>`;
+  $(".sheet").classList.toggle("wide", toolTab === "qr");
+  if (toolTab === "qr") renderQrTool(); else renderPwTool();
+}
+const QR_DEF = { style:"square", fg:"#000000", bg:"#ffffff", icon:"", size:512, isz:23 };
+const qrIszOf = c => Math.min(30, Math.max(10, parseInt(c.isz, 10) || 23));
+const qrDispW = n => Math.round(120 + (Math.log2(n) - 7) / 5 * 260);   // taille d'affichage de l'aperçu : 128 px → 120, 4096 px → 380
+const QR_SIZES = [256, 512, 1024, 2048];
+const qrCfg = () => { try { return { ...QR_DEF, ...JSON.parse(localStorage.getItem("notes.qr") || "{}") }; } catch { return { ...QR_DEF }; } };
+const qrSave = c => { try { localStorage.setItem("notes.qr", JSON.stringify(c)); } catch {} };
+let qrKind = "text", qrImg = null, qrLibP = null;
+const qrTexts = { text:"", json:"", link:"" };
+const QR_KINDS = [["text", "Texte"], ["json", "JSON"], ["link", "Lien"]];
+const QR_STYLES = [["square", "Carrés"], ["round", "Arrondis"], ["dots", "Points"]];
+const QR_ICONS = ["🔗", "🌐", "📶", "✉️", "📞", "📱", "💬", "📍", "🏠", "💼", "🛒", "💳", "🎁", "🎵", "📷", "☕", "🍴", "🔒", "✅", "⭐", "❤️", "🔥", "💡", "🚀", "🎓", "📅", "📓"];
+const QR_HINT = { text:"Saisissez du texte…", json:'{"nom": "Alice", "id": 42}', link:"https://exemple.fr" };
+const loadQrLib = () => qrLibP || (qrLibP = new Promise((res, rej) => {
+  if (window.qrcode) return res(window.qrcode);
+  const s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js";
+  s.onload = () => window.qrcode ? res(window.qrcode) : (qrLibP = null, rej(new Error("lib")));
+  s.onerror = () => { qrLibP = null; rej(new Error("lib")); }; document.head.appendChild(s);
+}));
+function qrMatrix(text, ec){
+  const lib = window.qrcode; lib.stringToBytes = s => Array.from(new TextEncoder().encode(s));   // accents / emojis en UTF-8
+  const qr = lib(0, ec); qr.addData(text, "Byte"); qr.make();
+  return { n: qr.getModuleCount(), dark: (r, k) => qr.isDark(r, k) };
+}
+function qrDraw(cv, m, c, px){
+  const q = 3, cell = px / (m.n + q * 2), g = cv.getContext("2d"), hasIcon = !!(c.icon || qrImg), box = hasIcon ? m.n * qrIszOf(c) / 100 * cell : 0;
+  cv.width = cv.height = px;
+  g.fillStyle = c.bg; g.fillRect(0, 0, px, px); g.fillStyle = c.fg;
+  const fin = (r, k) => (r < 7 && k < 7) || (r < 7 && k >= m.n - 7) || (r >= m.n - 7 && k < 7);
+  for (let r = 0; r < m.n; r++) for (let k = 0; k < m.n; k++) {
+    if (!m.dark(r, k)) continue;
+    const x = (k + q) * cell, y = (r + q) * cell;
+    if (hasIcon && Math.abs(x + cell / 2 - px / 2) < box / 2 && Math.abs(y + cell / 2 - px / 2) < box / 2) continue;   // zone libre pour l'icône
+    if (c.style === "dots" && !fin(r, k)) { g.beginPath(); g.arc(x + cell / 2, y + cell / 2, cell * 0.46, 0, 7); g.fill(); }
+    else if (c.style === "round") { g.beginPath(); if (g.roundRect) g.roundRect(x, y, cell, cell, cell * 0.3); else g.rect(x, y, cell, cell); g.fill(); }
+    else g.fillRect(x - 0.3, y - 0.3, cell + 0.6, cell + 0.6);
+  }
+  if (qrImg) { const s = Math.min(box * 0.9 / qrImg.width, box * 0.9 / qrImg.height); g.drawImage(qrImg, px / 2 - qrImg.width * s / 2, px / 2 - qrImg.height * s / 2, qrImg.width * s, qrImg.height * s); }
+  else if (c.icon) { g.font = `${box * 0.78}px system-ui,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(c.icon, px / 2, px / 2 + box * 0.04); }
+}
+async function qrUpdate(){
+  const cv = $("#qrCv"); if (!cv) return;
+  const c = qrCfg(), note = $("#qrNote"); let data = qrTexts[qrKind], err = "", m = null;
+  note.textContent = "";
+  if (qrKind === "json" && data.trim()) { try { data = JSON.stringify(JSON.parse(data)); } catch (e) { err = "JSON invalide : " + e.message; } }
+  else if (qrKind === "link" && data.trim()) { data = data.trim(); if (!/^[a-z][a-z0-9+.-]*:/i.test(data)) data = "https://" + data; note.textContent = "Lien encodé : " + data; }
+  if (!err && !data.trim()) err = "Saisissez un contenu pour générer le QR code.";
+  if (!err) { try { await loadQrLib(); } catch { err = "Bibliothèque QR non chargée : connexion internet requise."; } }
+  if (!err) { try { m = qrMatrix(data, (c.icon || qrImg) ? "H" : "M"); } catch { err = "Contenu trop long pour un QR code."; } }
+  if (!$("#qrCv")) return;                       // la fenêtre a changé pendant le chargement
+  cv.classList.toggle("hidden", !!err); $("#qrMsg").textContent = err; qrLastM = err ? null : m;
+  const sz = qrSizeOf(c);
+  cv.style.width = qrDispW(sz) + "px"; $("#qrDim").textContent = err ? "" : `${sz} × ${sz} px`;   // l'aperçu suit la taille choisie
+  if (!err) qrDraw(cv, m, c, 768);
+}
+function renderQrTool(){
+  const c = qrCfg(), sz = qrSizeOf(c);
+  const input = qrKind === "link" ? `<input class="qr-in" id="qrIn" type="text" inputmode="url" placeholder="${esc(QR_HINT.link)}" autocomplete="off" spellcheck="false" value="${esc(qrTexts.link)}">`
+    : `<textarea class="qr-in" id="qrIn" rows="${qrKind === "json" ? 5 : 3}" placeholder="${esc(QR_HINT[qrKind])}" spellcheck="false">${esc(qrTexts[qrKind])}</textarea>`;
+  $("#toolBody").innerHTML = `<div class="qr-wrap"><div class="qr-left">
+    <div class="seg" style="margin-bottom:12px">${QR_KINDS.map(([k, l]) => `<button data-qk="${k}" class="${k === qrKind ? "on" : ""}">${l}</button>`).join("")}</div>
+    ${input}
+    ${qrKind === "json" ? '<div class="cp-tools" style="margin:8px 0 0"><button class="btn2" id="qrPretty">Mettre en forme</button></div>' : ""}
+    <p class="pw-str" id="qrNote" style="margin:6px 2px 10px"></p>
+    <div class="pw-row"><b>Couleurs</b><input type="color" id="qrFg" value="${c.fg}" aria-label="Couleur du code"> <input type="color" id="qrBg" value="${c.bg}" aria-label="Couleur du fond"></div>
+    <div class="pw-row"><b>Forme</b><div class="qr-chips">${QR_STYLES.map(([k, l]) => `<button class="btn2 ${k === c.style ? "on" : ""}" data-qs="${k}">${l}</button>`).join("")}</div></div>
+    <div class="pw-row"><b>Icône</b><div class="qr-chips"><button class="btn2 ${!c.icon && !qrImg ? "on" : ""}" data-qi="">Aucune</button>
+      ${QR_ICONS.map(i => `<button class="btn2 ${c.icon === i && !qrImg ? "on" : ""}" data-qi="${i}">${i}</button>`).join("")}
+      <button class="btn2 ${qrImg ? "on" : ""}" id="qrImgBtn">🖼 Image…</button><input type="file" id="qrFile" accept="image/*" class="hidden"></div></div>
+    <div class="pw-row"><b>Taille icône</b><input type="number" id="qrIsz" min="10" max="30" step="1" value="${qrIszOf(c)}" inputmode="numeric" aria-label="Taille de l'icône en pourcentage"><span class="pw-str" style="margin:0">% du code</span></div>
+    <div class="pw-row"><b>Taille</b><input type="number" id="qrSize" min="128" max="4096" step="64" value="${sz}" inputmode="numeric" aria-label="Taille en pixels"><span class="pw-str" style="margin:0">px</span>
+      <div class="qr-chips">${QR_SIZES.map(z => `<button class="btn2 ${z === sz ? "on" : ""}" data-qz="${z}">${z}</button>`).join("")}</div></div>
+  </div><div class="qr-right">
+    <div class="qr-prev"><canvas id="qrCv" class="hidden" aria-label="Aperçu du QR code"></canvas><span id="qrMsg"></span></div>
+    <p class="pw-str" id="qrDim" style="text-align:center;margin:0 0 10px"></p>
+    <div class="cp-tools" style="justify-content:center"><button class="btn2 main" id="qrDl">⬇ Télécharger (PNG)</button><button class="btn2" id="qrCopy">Copier l'image</button></div>
+    <p class="note">Avec une icône, la correction d'erreur est maximale. Testez le code avec votre téléphone avant de l'imprimer.</p>
+  </div></div>`;
+  qrUpdate();
+}
+let qrLastM = null;
+const qrSizeOf = c => Math.min(4096, Math.max(128, parseInt(c.size, 10) || 512));
+const qrBlob = () => new Promise(r => { const c = qrCfg(), off = document.createElement("canvas"); qrDraw(off, qrLastM, c, qrSizeOf(c)); off.toBlob(r, "image/png"); });
+$("#mBody").addEventListener("click", async e => {
+  if (modalKind !== "tools") return;
+  const t = e.target.closest("[data-tool]"); if (t) { toolTab = t.dataset.tool; return renderTools(); }
+  if (toolTab !== "qr") return;
+  const k = e.target.closest("[data-qk]"), s = e.target.closest("[data-qs]"), i = e.target.closest("[data-qi]"), z = e.target.closest("[data-qz]");
+  if (z) { const c = qrCfg(); c.size = +z.dataset.qz; qrSave(c); return renderQrTool(); }
+  if (k) { qrKind = k.dataset.qk; return renderQrTool(); }
+  if (s) { const c = qrCfg(); c.style = s.dataset.qs; qrSave(c); return renderQrTool(); }
+  if (i) { const c = qrCfg(); c.icon = i.dataset.qi; qrImg = null; qrSave(c); return renderQrTool(); }
+  if (e.target.closest("#qrImgBtn")) return $("#qrFile").click();
+  if (e.target.closest("#qrPretty")) { try { qrTexts.json = JSON.stringify(JSON.parse(qrTexts.json), null, 2); $("#qrIn").value = qrTexts.json; qrUpdate(); } catch { toast("⚠ JSON invalide"); } return; }
+  if (e.target.closest("#qrDl") || e.target.closest("#qrCopy")) {
+    if ($("#qrCv").classList.contains("hidden")) return toast("⚠ Rien à exporter pour le moment");
+    const b = await qrBlob();
+    if (e.target.closest("#qrDl")) { const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `qrcode-${qrSizeOf(qrCfg())}px.png`; a.click(); toast(`⬇ QR code téléchargé (${qrSizeOf(qrCfg())} px)`); }
+    else { try { await navigator.clipboard.write([new ClipboardItem({ "image/png": b })]); toast("📋 Image copiée"); } catch { toast("⚠ Copie impossible ici : utilisez Télécharger"); } }
+  }
+});
+$("#mBody").addEventListener("input", e => {
+  if (modalKind !== "tools" || toolTab !== "qr") return;
+  const id = e.target.id;
+  if (id === "qrIn") { qrTexts[qrKind] = e.target.value; qrUpdate(); }
+  else if (id === "qrSize") { const v = parseInt(e.target.value, 10); if (v >= 128 && v <= 4096) { const c = qrCfg(); c.size = v; qrSave(c); $$("[data-qz]").forEach(b => b.classList.toggle("on", +b.dataset.qz === v)); qrUpdate(); } }
+  else if (id === "qrIsz") { const v = parseInt(e.target.value, 10); if (v >= 10 && v <= 30) { const c = qrCfg(); c.isz = v; qrSave(c); qrUpdate(); } }
+  else if (id === "qrFg" || id === "qrBg") { const c = qrCfg(); c[id === "qrFg" ? "fg" : "bg"] = e.target.value; qrSave(c); qrUpdate(); }
+});
+$("#mBody").addEventListener("change", e => {
+  if (modalKind !== "tools" || toolTab !== "qr") return;
+  if (e.target.id === "qrSize") { const c = qrCfg(); c.size = qrSizeOf({ size: e.target.value }); qrSave(c); return renderQrTool(); }   // valeur hors limites : ramenée entre 128 et 4096
+  if (e.target.id === "qrIsz") { const c = qrCfg(); c.isz = qrIszOf({ isz: e.target.value }); qrSave(c); return renderQrTool(); }
+  if (e.target.id !== "qrFile") return;
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  const img = new Image(), url = URL.createObjectURL(f);
+  img.onload = () => { qrImg = img; const c = qrCfg(); c.icon = ""; qrSave(c); renderQrTool(); };
+  img.onerror = () => { URL.revokeObjectURL(url); toast("⚠ Image illisible"); };
+  img.src = url;
 });
 </script>
 </body>
