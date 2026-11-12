@@ -314,7 +314,8 @@ input{font:inherit;color:inherit}
 .pw-opt label{display:flex;align-items:center;gap:8px;cursor:pointer}
 .pw-opt input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);flex:none}
 .pw-opt .pw-min{width:60px;padding:4px 6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font-size:14px}
-.pw-opt .pw-min:disabled{opacity:.4}
+.pw-opt .pw-min:disabled,.pw-opt .pw-sym:disabled{opacity:.4}
+.pw-opt .pw-sym{width:220px;max-width:100%;padding:5px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font:15px ui-monospace,Menlo,Consolas,monospace}
 
 @media (max-width:899px){
   #app{display:block;position:relative}
@@ -1746,14 +1747,15 @@ renderAchBtn();
    Outils : mots de passe
    ============================================================ */
 const PW_SETS = { up:"ABCDEFGHIJKLMNOPQRSTUVWXYZ", low:"abcdefghijklmnopqrstuvwxyz", dig:"0123456789", sym:"@&$!#?%*+-=_" };
-const PW_DEF = { len:16, up:true, low:true, dig:true, sym:false, noAmb:false, minU:"", minL:"", minD:"" };
+const PW_DEF = { len:16, up:true, low:true, dig:true, sym:true, symList:PW_SETS.sym, minU:"", minL:"", minD:"" };
+const PW_SYM_PRESETS = ["@&$!#?%*+-=_", "!@#$%^&*", "!?.,;:", "-_.", "!@#$%^&*()-_=+[]{};:,.<>/?"];
 const pwCfg = () => { try { return { ...PW_DEF, ...JSON.parse(localStorage.getItem("notes.pw") || "{}") }; } catch { return { ...PW_DEF }; } };
 const pwSave = c => { try { localStorage.setItem("notes.pw", JSON.stringify(c)); } catch {} };
 const rndInt = n => { const m = Math.floor(2 ** 32 / n) * n; let x; do { x = crypto.getRandomValues(new Uint32Array(1))[0]; } while (x >= m); return x % n; };
 const pickOf = s => s[rndInt(s.length)];
 function pwGenerate(c){
-  const f = s => c.noAmb ? s.replace(/[0O1lI|]/g, "") : s;
-  const U = c.up ? f(PW_SETS.up) : "", L = c.low ? f(PW_SETS.low) : "", D = c.dig ? f(PW_SETS.dig) : "", S = c.sym ? PW_SETS.sym : "";
+  const U = c.up ? PW_SETS.up : "", L = c.low ? PW_SETS.low : "", D = c.dig ? PW_SETS.dig : "";
+  const S = c.sym ? [...new Set([...String(c.symList || "")].filter(ch => ch.trim()))].join("") : "";
   const pool = U + L + D + S; if (!pool) return "";
   const chars = [], need = (set, n) => { for (let i = 0; set && i < n && chars.length < c.len; i++) chars.push(pickOf(set)); };
   need(U, +c.minU || 0); need(L, +c.minL || 0); need(D, +c.minD || 0); need(S, 1);
@@ -1778,8 +1780,11 @@ function renderTools(){
     <p class="pw-str" id="pwStr"></p>
     <div class="pw-row"><b>Longueur</b><input id="pwLen" type="number" min="4" max="128" step="1" value="${c.len}" inputmode="numeric"></div>
     <div class="pw-row"><b>Caractères utilisés</b></div>
-    <div class="pw-chars">${opt("pwUp", "up", "Majuscule", "pwMinU")}${opt("pwLow", "low", "Minuscule", "pwMinL")}${opt("pwDig", "dig", "Chiffres", "pwMinD")}${opt("pwSym", "sym", "Symboles")}</div>
-    <p class="note" style="text-align:left">Vous pouvez modifier le mot de passe à la main. Les champs « min » sont facultatifs.</p>`;
+    <div class="pw-chars">${opt("pwUp", "up", "Majuscule", "pwMinU")}${opt("pwLow", "low", "Minuscule", "pwMinL")}${opt("pwDig", "dig", "Chiffres", "pwMinD")}</div>
+    <div class="pw-row" style="margin-top:12px"><div class="pw-opt"><label><input type="checkbox" id="pwSym" ${c.sym ? "checked" : ""}>Symboles</label>
+      <input class="pw-sym" id="pwSymList" list="pwSymPresets" value="${esc(c.symList)}" ${c.sym ? "" : "disabled"} spellcheck="false" autocomplete="off" aria-label="Liste des symboles" title="Modifiez la liste ou choisissez-en une">
+      <datalist id="pwSymPresets">${PW_SYM_PRESETS.map(s => `<option value="${esc(s)}">`).join("")}</datalist></div></div>
+    <p class="note" style="text-align:left">Vous pouvez modifier le mot de passe et la liste des symboles à la main. Les champs « min » sont facultatifs.</p>`;
   pwRun();
 }
 $("#mBody").addEventListener("input", e => {
@@ -1788,13 +1793,14 @@ $("#mBody").addEventListener("input", e => {
   const c = pwCfg();
   if (id === "pwLen") { const v = parseInt(e.target.value, 10); if (!(v >= 4 && v <= 128)) return; c.len = v; }
   else if (id === "pwMinU") c.minU = e.target.value; else if (id === "pwMinL") c.minL = e.target.value; else if (id === "pwMinD") c.minD = e.target.value;
+  else if (id === "pwSymList") c.symList = e.target.value;
   else return;
   pwSave(c); pwRun();
 });
 $("#mBody").addEventListener("change", e => {
   const id = e.target.id; if (modalKind !== "tools" || !id || !id.startsWith("pw")) return;
   const c = pwCfg(), on = e.target.checked;
-  const keys = { pwUp:["up","pwMinU"], pwLow:["low","pwMinL"], pwDig:["dig","pwMinD"], pwSym:["sym"], pwAmb:["noAmb"] };
+  const keys = { pwUp:["up","pwMinU"], pwLow:["low","pwMinL"], pwDig:["dig","pwMinD"], pwSym:["sym","pwSymList"] };
   if (id === "pwLen") { c.len = Math.min(128, Math.max(4, parseInt(e.target.value, 10) || 16)); e.target.value = c.len; }
   else if (keys[id]) { c[keys[id][0]] = on; if (keys[id][1]) $("#" + keys[id][1]).disabled = !on; }
   else return;
