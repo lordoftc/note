@@ -301,6 +301,21 @@ input{font:inherit;color:inherit}
 .how{font-size:13.5px;color:var(--muted);line-height:1.6;margin:0;padding-left:18px}
 .how b{color:var(--text)}
 
+/* ---------- Outils ---------- */
+.pw-out{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.pw-out input{flex:1;min-width:0;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg2);color:var(--text);font:600 20px ui-monospace,Menlo,Consolas,monospace}
+.pw-out input:focus{outline:2px solid var(--accent);border-color:transparent}
+.pw-str{font-size:12.5px;color:var(--muted);margin:0 2px 14px}
+.pw-row{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.pw-row>b{min-width:120px}
+.pw-row input[type=number]{width:80px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px}
+.pw-chars{display:flex;flex-wrap:wrap;gap:8px}
+.pw-opt{display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.pw-opt label{display:flex;align-items:center;gap:8px;cursor:pointer}
+.pw-opt input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.pw-opt .pw-min{width:60px;padding:4px 6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font-size:14px}
+.pw-opt .pw-min:disabled{opacity:.4}
+
 @media (max-width:899px){
   #app{display:block;position:relative}
   .col{position:absolute;inset:0;transform:translateX(100%);transition:transform .25s ease;border:0}
@@ -364,6 +379,7 @@ input{font:inherit;color:inherit}
       <button id="btnRemind">🧠 Rappels &amp; révision</button>
       <button id="btnAch">🏆 Succès</button>
       <button id="btnTheme">🎨 Thème</button>
+      <button id="btnTools">🛠 Outils</button>
       <button id="btnImportMd">⬆ Importer .md</button>
       <button id="btnExport">⬇ Sauvegarde</button>
       <input type="file" id="fileMd" accept=".md,.markdown,.txt,text/markdown,text/plain" multiple class="hidden">
@@ -1183,12 +1199,13 @@ function renderThemes(){
 let modalKind = null;
 function openModal(kind, title){ modalKind = kind; $("#mTitle").textContent = title; $("#modal").classList.remove("hidden"); renderModal(); $("#mBody").scrollTop = 0; }
 function closeModal(){ if (modalKind === "study") endStudy(); modalKind = null; $("#modal").classList.add("hidden"); }
-function renderModal(){ if (modalKind === "ach") renderAch(); else if (modalKind === "theme") renderThemes(); else if (modalKind === "study") renderStudy(); else if (modalKind === "remind") renderRemind(); }
+function renderModal(){ if (modalKind === "ach") renderAch(); else if (modalKind === "theme") renderThemes(); else if (modalKind === "study") renderStudy(); else if (modalKind === "remind") renderRemind(); else if (modalKind === "tools") renderTools(); }
 $("#mClose").onclick = closeModal;
 $("#modal").addEventListener("click", e => { if (e.target.id === "modal") closeModal(); });
 $("#mBody").addEventListener("click", e => { const t = e.target.closest("[data-theme-opt]"); if (t) { applyTheme(t.dataset.themeOpt); renderThemes(); } });
 addEventListener("keydown", e => { if (e.key === "Escape" && modalKind) closeModal(); });
 $("#btnTheme").onclick = () => openModal("theme", "🎨 Thème");
+$("#btnTools").onclick = () => openModal("tools", "🛠 Outils");
 $("#btnAch").onclick = () => openModal("ach", "🏆 Succès");
 $("#btnRemind").onclick = () => openModal("remind", "🧠 Rappels & révision");
 
@@ -1724,6 +1741,74 @@ function renderAch(){
   b.innerHTML = h;
 }
 renderAchBtn();
+
+/* ============================================================
+   Outils : mots de passe
+   ============================================================ */
+const PW_SETS = { up:"ABCDEFGHIJKLMNOPQRSTUVWXYZ", low:"abcdefghijklmnopqrstuvwxyz", dig:"0123456789", sym:"@&$!#?%*+-=_" };
+const PW_DEF = { len:16, up:true, low:true, dig:true, sym:false, noAmb:false, minU:"", minL:"", minD:"" };
+const pwCfg = () => { try { return { ...PW_DEF, ...JSON.parse(localStorage.getItem("notes.pw") || "{}") }; } catch { return { ...PW_DEF }; } };
+const pwSave = c => { try { localStorage.setItem("notes.pw", JSON.stringify(c)); } catch {} };
+const rndInt = n => { const m = Math.floor(2 ** 32 / n) * n; let x; do { x = crypto.getRandomValues(new Uint32Array(1))[0]; } while (x >= m); return x % n; };
+const pickOf = s => s[rndInt(s.length)];
+function pwGenerate(c){
+  const f = s => c.noAmb ? s.replace(/[0O1lI|]/g, "") : s;
+  const U = c.up ? f(PW_SETS.up) : "", L = c.low ? f(PW_SETS.low) : "", D = c.dig ? f(PW_SETS.dig) : "", S = c.sym ? PW_SETS.sym : "";
+  const pool = U + L + D + S; if (!pool) return "";
+  const chars = [], need = (set, n) => { for (let i = 0; set && i < n && chars.length < c.len; i++) chars.push(pickOf(set)); };
+  need(U, +c.minU || 0); need(L, +c.minL || 0); need(D, +c.minD || 0); need(S, 1);
+  while (chars.length < c.len) chars.push(pickOf(pool));
+  for (let i = chars.length - 1; i > 0; i--) { const j = rndInt(i + 1); [chars[i], chars[j]] = [chars[j], chars[i]]; }
+  return chars.join("");
+}
+function pwShowStrength(){
+  const s = $("#pwOut").value;
+  const n = (/[a-z]/.test(s) ? 26 : 0) + (/[A-Z]/.test(s) ? 26 : 0) + (/\d/.test(s) ? 10 : 0) + (/[^A-Za-z0-9]/.test(s) ? 20 : 0);
+  const b = Math.round(s.length * Math.log2(n || 1));
+  $("#pwStr").textContent = !s ? "Cochez au moins un type de caractère." : `Force : ${b < 50 ? "faible" : b < 80 ? "moyenne" : b < 110 ? "forte" : "très forte"} (${b} bits)`;
+}
+function pwRun(){ $("#pwOut").value = pwGenerate(pwCfg()); pwShowStrength(); }
+function renderTools(){
+  const c = pwCfg();
+  const opt = (id, key, label, min) => `<div class="pw-opt"><label><input type="checkbox" id="${id}" ${c[key] ? "checked" : ""}>${label}</label>` +
+    (min ? `<input class="pw-min" id="${min}" type="number" min="0" max="128" placeholder="min" value="${esc(c[min.replace("pwMin", "min")])}" ${c[key] ? "" : "disabled"} title="Nombre minimum (facultatif)">` : "") + `</div>`;
+  $("#mBody").innerHTML = `<div class="seg" style="margin-bottom:14px"><button class="on">🔑 Mot de passe</button></div>
+    <div class="pw-out"><input id="pwOut" spellcheck="false" autocomplete="off" aria-label="Mot de passe">
+      <button class="btn2 main" id="pwCopy">Copier</button><button class="icon" id="pwNew" title="Nouveau" aria-label="Nouveau mot de passe">↻</button></div>
+    <p class="pw-str" id="pwStr"></p>
+    <div class="pw-row"><b>Longueur</b><input id="pwLen" type="number" min="4" max="128" step="1" value="${c.len}" inputmode="numeric"></div>
+    <div class="pw-row"><b>Caractères utilisés</b></div>
+    <div class="pw-chars">${opt("pwUp", "up", "Majuscule", "pwMinU")}${opt("pwLow", "low", "Minuscule", "pwMinL")}${opt("pwDig", "dig", "Chiffres", "pwMinD")}${opt("pwSym", "sym", "Symboles")}</div>
+    <p class="note" style="text-align:left">Vous pouvez modifier le mot de passe à la main. Les champs « min » sont facultatifs.</p>`;
+  pwRun();
+}
+$("#mBody").addEventListener("input", e => {
+  const id = e.target.id; if (modalKind !== "tools" || !id || !id.startsWith("pw")) return;
+  if (id === "pwOut") return pwShowStrength();
+  const c = pwCfg();
+  if (id === "pwLen") { const v = parseInt(e.target.value, 10); if (!(v >= 4 && v <= 128)) return; c.len = v; }
+  else if (id === "pwMinU") c.minU = e.target.value; else if (id === "pwMinL") c.minL = e.target.value; else if (id === "pwMinD") c.minD = e.target.value;
+  else return;
+  pwSave(c); pwRun();
+});
+$("#mBody").addEventListener("change", e => {
+  const id = e.target.id; if (modalKind !== "tools" || !id || !id.startsWith("pw")) return;
+  const c = pwCfg(), on = e.target.checked;
+  const keys = { pwUp:["up","pwMinU"], pwLow:["low","pwMinL"], pwDig:["dig","pwMinD"], pwSym:["sym"], pwAmb:["noAmb"] };
+  if (id === "pwLen") { c.len = Math.min(128, Math.max(4, parseInt(e.target.value, 10) || 16)); e.target.value = c.len; }
+  else if (keys[id]) { c[keys[id][0]] = on; if (keys[id][1]) $("#" + keys[id][1]).disabled = !on; }
+  else return;
+  pwSave(c); pwRun();
+});
+$("#mBody").addEventListener("click", async e => {
+  if (modalKind !== "tools") return;
+  if (e.target.closest("#pwNew")) return pwRun();
+  if (e.target.closest("#pwCopy")) {
+    const v = $("#pwOut").value; if (!v) return;
+    try { await navigator.clipboard.writeText(v); } catch { $("#pwOut").select(); document.execCommand("copy"); }
+    toast("📋 Mot de passe copié");
+  }
+});
 </script>
 </body>
 </html>
