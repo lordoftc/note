@@ -1875,7 +1875,7 @@ $("#mBody").addEventListener("click", async e => {
    ============================================================ */
 let toolTab = "pw";
 function renderTools(){
-  $("#mBody").innerHTML = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap"><div class="seg" style="margin:0"><button data-tool="pw" class="${toolTab === "pw" ? "on" : ""}">🔑 Mot de passe</button><button data-tool="qr" class="${toolTab === "qr" ? "on" : ""}">▦ QR code</button><button data-tool="pdf" class="${toolTab === "pdf" ? "on" : ""}">📄 PDF</button></div><button class="btn2" id="toolLink" title="Copier le lien direct vers cet outil">🔗 Lien</button></div><div id="toolBody"></div>`;
+  $("#mBody").innerHTML = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap"><div class="seg" style="margin:0"><button data-tool="pw" class="${toolTab === "pw" ? "on" : ""}">🔑 Mot de passe</button><button data-tool="qr" class="${toolTab === "qr" ? "on" : ""}">▦ QR code</button><button data-tool="pdf" class="${toolTab === "pdf" ? "on" : ""}">📄 PDF / Image</button></div><button class="btn2" id="toolLink" title="Copier le lien direct vers cet outil">🔗 Lien</button></div><div id="toolBody"></div>`;
   setToolUrl(toolTab);
   $(".sheet").classList.add("full"); $(".sheet").classList.toggle("wide", toolTab !== "pw");
   if (toolTab === "qr") renderQrTool(); else if (toolTab === "pdf") renderPdfTool(); else renderPwTool();
@@ -2013,7 +2013,7 @@ const pdfPctOf = c => Math.min(100, Math.max(1, parseInt(c.pct, 10) || 50));
 const PDF_DPI = [150, 200, 300];
 const PDF_JS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", PDF_WORKER = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 const PDF_LIB = "https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js";
-let pdfDoc = null, pdfBytes = null, pdfName = "", pdfPage = 1, pdfPages = "", pdfBusy = false, pdfThumb = null, pdfPjsP = null;
+let pdfImgMime = "image/png", pdfKind = "pdf", pdfImg = null, pdfDoc = null, pdfBytes = null, pdfName = "", pdfPage = 1, pdfPages = "", pdfBusy = false, pdfThumb = null, pdfPjsP = null;
 const loadScript = (url, test) => new Promise((res, rej) => {
   if (test()) return res();
   const el = document.createElement("script"); el.src = url; el.onload = () => test() ? res() : rej(new Error("lib")); el.onerror = () => rej(new Error("lib")); document.head.appendChild(el);
@@ -2041,39 +2041,59 @@ function pdfRegion(c, w, h){               // zone effacée {y, h} en pixels
   const eh = Math.round(h * pdfPctOf(c) / 100);
   return c.pos === "top" ? { y: 0, h: eh } : { y: h - eh, h: eh };
 }
+const PDF_IMG_EXT = { "image/png":"png", "image/jpeg":"jpg", "image/webp":"webp" };
+function pdfImageDoc(bm){                       // une image se comporte comme un PDF d'une seule page
+  return { numPages: 1, destroy(){}, getPage: async () => ({
+    getViewport: ({ scale }) => ({ width: bm.width * scale, height: bm.height * scale }),
+    render: ({ canvasContext: g, viewport: v }) => { g.drawImage(bm, 0, 0, v.width, v.height); return { promise: Promise.resolve() }; } }) };
+}
+async function pdfLoadBitmap(f){
+  if (window.createImageBitmap) { try { return await createImageBitmap(f); } catch {} }
+  const url = URL.createObjectURL(f);
+  try { const im = new Image(); im.src = url; await im.decode(); return im; } finally { setTimeout(() => URL.revokeObjectURL(url), 5000); }
+}
 async function pdfOpenFile(f){
   if (!f) return;
-  if (!/pdf$/i.test(f.type) && !/\.pdf$/i.test(f.name)) return toast("⚠ Choisissez un fichier PDF");
-  toast("⏳ Ouverture du PDF…");
+  const isImg = /^image\//i.test(f.type) || /\.(png|jpe?g|webp|gif|bmp|avif)$/i.test(f.name);
+  if (!isImg && !/pdf$/i.test(f.type) && !/\.pdf$/i.test(f.name)) return toast("⚠ Choisissez un PDF ou une image");
+  toast("⏳ Ouverture…");
   try {
-    const lib = await loadPdfJs(), bytes = new Uint8Array(await f.arrayBuffer());
-    const doc = await lib.getDocument({ data: bytes.slice() }).promise;
-    pdfDoc?.destroy?.(); pdfDoc = doc; pdfBytes = bytes; pdfName = f.name.replace(/\.pdf$/i, ""); pdfPage = 1; pdfThumb = null;
+    if (isImg) {
+      const bm = await pdfLoadBitmap(f); if (!bm.width || !bm.height) throw new Error("img");
+      pdfDoc?.destroy?.(); pdfImg?.close?.();
+      pdfImg = bm; pdfDoc = pdfImageDoc(bm); pdfBytes = null; pdfKind = "img"; pdfPage = 1; pdfThumb = null;
+      pdfImgMime = PDF_IMG_EXT[f.type] ? f.type : "image/png";
+      pdfName = f.name.replace(/\.[^.]+$/, "");
+    } else {
+      const lib = await loadPdfJs(), bytes = new Uint8Array(await f.arrayBuffer());
+      const doc = await lib.getDocument({ data: bytes.slice() }).promise;
+      pdfDoc?.destroy?.(); pdfImg?.close?.(); pdfImg = null; pdfDoc = doc; pdfBytes = bytes; pdfKind = "pdf"; pdfName = f.name.replace(/\.pdf$/i, ""); pdfPage = 1; pdfThumb = null;
+    }
     $("#toast").classList.remove("on");
   } catch (e) {
-    pdfDoc = null; pdfBytes = null;
-    toast(e && e.name === "PasswordException" ? "⚠ PDF protégé par mot de passe : non pris en charge" : e && e.message === "lib" || (e instanceof TypeError) ? "⚠ Bibliothèque PDF non chargée : connexion internet requise" : "⚠ Impossible de lire ce PDF");
+    pdfDoc = null; pdfBytes = null; pdfImg = null;
+    toast(isImg ? "⚠ Impossible de lire cette image" : e && e.name === "PasswordException" ? "⚠ PDF protégé par mot de passe : non pris en charge" : e && e.message === "lib" || (e instanceof TypeError) ? "⚠ Bibliothèque PDF non chargée : connexion internet requise" : "⚠ Impossible de lire ce PDF");
   }
   if (toolTab === "pdf" && modalKind === "tools") renderPdfTool();
 }
 function renderPdfTool(){
-  const c = pdfCfg(), n = pdfDoc ? pdfDoc.numPages : 0, pct = pdfPctOf(c);
+  const c = pdfCfg(), n = pdfDoc ? pdfDoc.numPages : 0, pct = pdfPctOf(c), isImg = pdfKind === "img";
   $("#toolBody").innerHTML = `<div class="qr-wrap pdf"><div class="qr-left">
-    <div class="pw-row"><b>Fichier</b><span class="pw-str" style="margin:0;word-break:break-all">${pdfDoc ? esc(pdfName) + ".pdf · " + n + " page" + (n > 1 ? "s" : "") : "aucun"}</span></div>
-    <div class="pw-row"><b>Qualité</b><div class="qr-chips">${PDF_DPI.map(d => `<button class="btn2 ${d === c.dpi ? "on" : ""}" data-pd="${d}">${d} dpi</button>`).join("")}</div></div>
-    <p class="note" style="text-align:left">Cliquez ou faites glisser sur la page pour choisir la zone à effacer (au doigt : déplacez la pastille rouge). Les pages modifiées sont converties en image : la zone effacée est réellement supprimée (le texte n'est plus récupérable). Les autres pages restent inchangées. Le fichier ne quitte pas votre appareil.</p>
+    <div class="pw-row"><b>Fichier</b><span class="pw-str" style="margin:0;word-break:break-all">${pdfDoc ? (isImg ? esc(pdfName) + " · " + pdfImg.width + " × " + pdfImg.height + " px" : esc(pdfName) + ".pdf · " + n + " page" + (n > 1 ? "s" : "")) : "aucun"}</span></div>
+    <div class="pw-row ${isImg ? "hidden" : ""}"><b>Qualité</b><div class="qr-chips">${PDF_DPI.map(d => `<button class="btn2 ${d === c.dpi ? "on" : ""}" data-pd="${d}">${d} dpi</button>`).join("")}</div></div>
+    <p class="note" style="text-align:left">Cliquez ou faites glisser sur la page pour choisir la zone à effacer (au doigt : déplacez la pastille rouge). Pour un PDF, les pages modifiées sont converties en image : la zone effacée est réellement supprimée (le texte n'est plus récupérable) et les autres pages restent inchangées. Une image est exportée dans son format d'origine (PNG, JPEG ou WebP) à sa taille d'origine. Le fichier ne quitte pas votre appareil.</p>
   </div><div class="qr-right">
     ${pdfDoc ? `<div class="pdf-thumb"><div class="pdf-stage" id="pdfStage"><canvas id="pdfCv" aria-label="Miniature de la page"></canvas><div class="pdf-handle" id="pdfHandle"><span class="pdf-knob" id="pdfKnob"></span></div></div></div>
-      <div class="pdf-nav"><button id="pdfPrev" aria-label="Page précédente">‹</button><span id="pdfNum"></span><button id="pdfNext" aria-label="Page suivante">›</button></div>`
-      : `<label class="pdf-drop" id="pdfDrop" for="pdfFile">Déposez un PDF ici<br>ou cliquez pour le choisir</label>`}
-    <div class="cp-tools pdf-btns"><button class="btn2" id="pdfPick">📂 ${pdfDoc ? "Changer de PDF…" : "Choisir un PDF…"}</button><button class="btn2 main" id="pdfGo" ${pdfDoc ? "" : "disabled"}>⬇ Effacer et télécharger</button>
-      <input type="file" id="pdfFile" accept="application/pdf,.pdf" class="hidden"></div>
+      <div class="pdf-nav ${n > 1 ? "" : "hidden"}"><button id="pdfPrev" aria-label="Page précédente">‹</button><span id="pdfNum"></span><button id="pdfNext" aria-label="Page suivante">›</button></div>`
+      : `<label class="pdf-drop" id="pdfDrop" for="pdfFile">Déposez un PDF ou une image ici<br>ou cliquez pour le choisir</label>`}
+    <div class="cp-tools pdf-btns"><button class="btn2" id="pdfPick">📂 ${pdfDoc ? "Changer de fichier…" : "Choisir un PDF ou une image…"}</button><button class="btn2 main" id="pdfGo" ${pdfDoc ? "" : "disabled"}>⬇ Effacer et télécharger</button>
+      <input type="file" id="pdfFile" accept="application/pdf,.pdf,image/*" class="hidden"></div>
     <div class="pdf-ctl">
       <div class="pw-row"><b>Zone</b><div class="qr-chips">
         <button class="btn2 ${c.pos === "bottom" ? "on" : ""}" data-pp="bottom">Partie basse</button><button class="btn2 ${c.pos === "top" ? "on" : ""}" data-pp="top">Partie haute</button></div></div>
       <div class="pw-row"><b>Hauteur</b><input type="number" id="pdfPct" min="1" max="100" step="1" value="${pct}" inputmode="numeric" aria-label="Pourcentage de la page à effacer"><span class="pw-str" style="margin:0">% de la page</span>
         <div class="qr-chips">${[25, 33, 50, 75].map(v => `<button class="btn2 ${v === pct ? "on" : ""}" data-pv="${v}">${v}%</button>`).join("")}</div></div>
-      <div class="pw-row"><b>Pages</b><input type="text" id="pdfPages" class="pdf-pages" placeholder="Toutes (ex. 1-3,5)" value="${esc(pdfPages)}" autocomplete="off" spellcheck="false" aria-label="Pages à modifier"><span class="pw-str" id="pdfInfo" style="margin:0"></span></div>
+      <div class="pw-row ${n > 1 ? "" : "hidden"}"><b>Pages</b><input type="text" id="pdfPages" class="pdf-pages" placeholder="Toutes (ex. 1-3,5)" value="${esc(pdfPages)}" autocomplete="off" spellcheck="false" aria-label="Pages à modifier"><span class="pw-str" id="pdfInfo" style="margin:0"></span></div>
     </div>
   </div></div>`;
   if (pdfDoc) pdfPreview();
@@ -2107,8 +2127,18 @@ async function pdfPreview(){
     g.fillStyle = "#dc2626"; g.font = `600 ${Math.round(cv.width / 16)}px system-ui,sans-serif`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("zone effacée", cv.width / 2, r.y + r.h / 2);
   }
 }
+async function pdfExportImage(){
+  const c = pdfCfg(), cv = document.createElement("canvas"), g = cv.getContext("2d");
+  cv.width = pdfImg.width; cv.height = pdfImg.height; g.drawImage(pdfImg, 0, 0);
+  const r = pdfRegion(c, cv.width, cv.height); g.fillStyle = "#ffffff"; g.fillRect(0, r.y, cv.width, r.h);
+  const blob = await new Promise(res => cv.toBlob(res, pdfImgMime, 0.92)), a = document.createElement("a");
+  if (!blob) return toast("⚠ Échec de l'export de l'image");
+  a.href = URL.createObjectURL(blob); a.download = `${pdfName || "image"}-efface.${PDF_IMG_EXT[pdfImgMime] || "png"}`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 60000); toast("⬇ Image téléchargée");
+}
 async function pdfExport(){
   if (!pdfDoc || pdfBusy) return;
+  if (pdfKind === "img") return pdfExportImage();
   const c = pdfCfg(), n = pdfDoc.numPages, set = pdfParsePages(pdfPages, n), btn = $("#pdfGo");
   if (!set.size) return toast("⚠ Aucune page valide à modifier");
   pdfBusy = true; btn.disabled = true;
@@ -2195,7 +2225,7 @@ $("#mBody").addEventListener("drop", e => { if (modalKind === "tools" && toolTab
    Liens directs : index.html#pdf  ·  .../index/pdf (si le serveur renvoie
    index.html pour ce chemin)  ·  #qr  #mdp  #outils
    ============================================================ */
-const TOOL_KEYS = { pdf:"pdf", qr:"qr", qrcode:"qr", mdp:"pw", password:"pw", motdepasse:"pw", pw:"pw" };
+const TOOL_KEYS = { pdf:"pdf", image:"pdf", img:"pdf", images:"pdf", qr:"qr", qrcode:"qr", mdp:"pw", password:"pw", motdepasse:"pw", pw:"pw" };
 const KEY_OF = { pw:"mdp", qr:"qr", pdf:"pdf" };
 let toolPathBase = null;       // ex. "/index/" quand la page a été ouverte via /index/pdf
 { const seg = location.pathname.split("/"), last = (seg[seg.length - 1] || "").toLowerCase();
