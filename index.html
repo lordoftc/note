@@ -77,6 +77,8 @@ input{font:inherit;color:inherit}
 .card input:focus{outline:2px solid var(--accent);border-color:transparent}
 .primary{width:100%;margin-top:18px;padding:14px;background:var(--accent);color:var(--on-accent);border-radius:10px;font-weight:700}
 .primary:active{opacity:.85}
+.ghost{width:100%;margin-top:6px;padding:12px;border:1px solid var(--line);border-radius:10px;font-weight:600;color:var(--accent);background:var(--bg2)}
+.ghost:hover{background:var(--bg3)}
 .primary:disabled{opacity:.5}
 #authErr{color:var(--danger);font-size:13px;min-height:18px;margin-top:10px;text-align:center}
 .note{font-size:11.5px;color:var(--muted);text-align:center;margin-top:12px;line-height:1.4}
@@ -331,6 +333,25 @@ input{font:inherit;color:inherit}
 }
 .qr-chips{display:flex;flex-wrap:wrap;gap:6px}
 .qr-chips .btn2{min-width:36px;padding:5px 8px}
+.pdf-drop{display:grid;place-items:center;min-height:200px;border:2px dashed var(--line);border-radius:14px;padding:16px;text-align:center;color:var(--muted);font-size:14px;cursor:pointer;background:var(--bg2)}
+.pdf-drop.over,.pdf-drop:hover{border-color:var(--accent);color:var(--accent)}
+.pdf-thumb{display:grid;place-items:center;background:var(--bg3);border-radius:12px;padding:12px;min-height:200px}
+.pdf-thumb canvas{max-width:100%;max-height:clamp(200px,calc(100vh - 430px),800px);max-height:clamp(200px,calc(100dvh - 430px),800px);width:auto;height:auto;box-shadow:0 2px 10px var(--shadow);background:#fff}
+.pdf-nav{display:flex;justify-content:center;align-items:center;gap:12px;margin:8px 0;font-size:13.5px}
+.pdf-nav button{padding:4px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg2)}
+.pdf-nav button:disabled{opacity:.4}
+.qr-wrap.pdf .qr-right{order:-1}
+.pdf-stage{position:relative;display:inline-block;max-width:100%;line-height:0;cursor:ns-resize;user-select:none;-webkit-user-select:none}
+.pdf-stage canvas{display:block}
+.pdf-handle{position:absolute;left:0;right:0;height:0;pointer-events:none}
+.pdf-knob{position:absolute;right:8px;top:0;transform:translateY(-50%);pointer-events:auto;touch-action:none;cursor:ns-resize;background:#dc2626;color:#fff;font:700 13px/1 system-ui,sans-serif;padding:8px 12px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.35);white-space:nowrap}
+.pdf-handle[data-edge="t"] .pdf-knob{transform:none}
+.pdf-handle[data-edge="b"] .pdf-knob{transform:translateY(-100%)}
+.pdf-ctl{margin-top:4px}
+.pdf-btns{justify-content:center;margin:6px 0 10px}
+.pdf-ctl .pw-row{margin-bottom:8px}
+@media (min-width:900px){.qr-wrap.pdf .qr-right{order:0}}
+.pw-row input[type=text].pdf-pages{width:190px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font-size:15px}
 .pw-row input[type=color]{width:42px;height:34px;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
 .pw-opt .pw-sym{width:220px;max-width:100%;padding:5px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font:15px ui-monospace,Menlo,Consolas,monospace}
 
@@ -353,6 +374,10 @@ input{font:inherit;color:inherit}
   .meta{padding-left:36px;padding-right:clamp(48px,12%,180px)}
   #editor,#mdBox{padding-left:36px;padding-right:clamp(48px,12%,180px)}
 }
+/* Fenêtre Outils : toute la hauteur de l'écran */
+.sheet.full{height:100vh;height:100dvh;max-height:none!important;border-radius:0}
+.sheet.full .sheet-body{flex:1;min-height:0}
+@media (min-width:900px){.sheet.full{max-width:1020px}.sheet.full:not(.wide){max-width:640px}.qr-wrap{grid-template-columns:minmax(0,1fr) 460px!important}}
 </style>
 </head>
 <body data-view="nav">
@@ -379,6 +404,7 @@ input{font:inherit;color:inherit}
     </div>
     <button class="primary" id="authBtn" type="submit">Se connecter</button>
     <div id="authErr"></div>
+    <button type="button" class="ghost" id="authTools">🛠 Outils</button>
     <div class="note">☁ Vos notes sont stockées de façon privée sur Firebase et accessibles uniquement avec votre compte.</div>
   </form>
 </div>
@@ -473,12 +499,9 @@ input{font:inherit;color:inherit}
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut }
-  from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
-         doc, collection, setDoc, deleteDoc, onSnapshot, writeBatch }
-  from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+/* Firebase n'est chargé qu'à la connexion (voir loadFirebase) : les outils fonctionnent sans lui. */
+let initializeApp, getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
+    initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, collection, setDoc, deleteDoc, onSnapshot, writeBatch;
 
 /* =====================================================================
    1) COLLEZ ICI LA CONFIGURATION DE VOTRE PROJET FIREBASE
@@ -508,11 +531,21 @@ const fromEmail = e => e.replace(/@notes\.invalid$/, "");
 
 /* ---------- Init Firebase ---------- */
 const configured = !firebaseConfig.apiKey.startsWith("VOTRE");
-let auth, db;
-if (configured) {
-  const app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+let auth, db, fbP = null;
+const FB = "https://www.gstatic.com/firebasejs/10.14.1/";
+const SIGNED = "notes.signedin";      // mémorise qu'une session existe : Firebase est alors rechargé au démarrage pour la restaurer
+const setSigned = on => { try { on ? localStorage.setItem(SIGNED, "1") : localStorage.removeItem(SIGNED); } catch {} };
+function loadFirebase(){
+  return fbP || (fbP = (async () => {
+    const [a, au, fs] = await Promise.all([import(FB + "firebase-app.js"), import(FB + "firebase-auth.js"), import(FB + "firebase-firestore.js")]);
+    ({ initializeApp } = a);
+    ({ getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } = au);
+    ({ initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, collection, setDoc, deleteDoc, onSnapshot, writeBatch } = fs);
+    const app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+    onAuthStateChanged(auth, u => { if (u) { setSigned(true); start(u); } else { setSigned(false); stop(); showAuth(); } });
+  })().catch(e => { fbP = null; throw e; }));
 }
 
 /* ---------- Auth UI ---------- */
@@ -545,10 +578,12 @@ $("#authForm").addEventListener("submit", async e => {
   }
   btn.disabled = true;
   try {
+    btn.textContent = "Chargement…"; await loadFirebase();
+    btn.textContent = mode === "login" ? "Se connecter" : "Créer mon compte";
     if (mode === "reg") await createUserWithEmailAndPassword(auth, toEmail(name), pw);
     else await signInWithEmailAndPassword(auth, toEmail(name), pw);
-  } catch (ex) { err.textContent = AUTH_ERR[ex.code] || ("Erreur : " + (ex.code || ex.message)); }
-  btn.disabled = false;
+  } catch (ex) { err.textContent = !auth ? "Impossible de charger Firebase : connexion internet requise." : AUTH_ERR[ex.code] || ("Erreur : " + (ex.code || ex.message)); }
+  btn.textContent = mode === "login" ? "Se connecter" : "Créer mon compte"; btn.disabled = false;
 });
 $("#btnLogout").onclick = async () => {
   await Promise.race([flushSave(), new Promise(r => setTimeout(r, 3000))]);   // ne bloque pas la déconnexion hors-ligne
@@ -669,10 +704,11 @@ function stop(){
   unsubStruct?.(); unsubPages?.(); unsubStats?.(); unsubStruct = unsubPages = unsubStats = null; uidUser = null;
   for (const t of [saveT, readT, wcT, checkT]) clearTimeout(t);
   clearInterval(remT); remT = null; study = null;
-  saveT = readT = wcT = checkT = null; readFor = null; dirty.clear(); stats = null; closeModal();
+  saveT = readT = wcT = checkT = null; readFor = null; dirty.clear(); stats = null; if (modalKind !== "tools") closeModal();   // un outil ouvert par lien direct reste ouvert
 }
-if (configured) onAuthStateChanged(auth, u => { if (u) start(u); else { stop(); showAuth(); } });
-else showAuth();
+let wasSigned = false; try { wasSigned = !!localStorage.getItem(SIGNED); } catch {}
+if (configured && wasSigned) loadFirebase().catch(() => { showAuth(); $("#authErr").textContent = "Pas de connexion internet : impossible de rouvrir votre session."; });
+else showAuth();      // sinon : aucun chargement Firebase tant que l'on ne se connecte pas
 
 function setSync(pending, cache){
   $("#sync").textContent = !navigator.onLine ? "📴 Hors-ligne (enregistré localement)" : pending ? "⏳ Synchronisation…" : cache ? "☁ Connexion…" : "☁ Synchronisé";
@@ -1216,7 +1252,7 @@ function renderThemes(){
    ============================================================ */
 let modalKind = null;
 function openModal(kind, title){ modalKind = kind; $("#mTitle").textContent = title; $("#modal").classList.remove("hidden"); renderModal(); $("#mBody").scrollTop = 0; }
-function closeModal(){ $(".sheet").classList.remove("wide"); if (modalKind === "study") endStudy(); modalKind = null; $("#modal").classList.add("hidden"); }
+function closeModal(){ $(".sheet").classList.remove("wide", "full"); if (modalKind === "tools") clearToolUrl(); if (modalKind === "study") endStudy(); modalKind = null; $("#modal").classList.add("hidden"); }
 function renderModal(){ if (modalKind === "ach") renderAch(); else if (modalKind === "theme") renderThemes(); else if (modalKind === "study") renderStudy(); else if (modalKind === "remind") renderRemind(); else if (modalKind === "tools") renderTools(); }
 $("#mClose").onclick = closeModal;
 $("#modal").addEventListener("click", e => { if (e.target.id === "modal") closeModal(); });
@@ -1224,6 +1260,7 @@ $("#mBody").addEventListener("click", e => { const t = e.target.closest("[data-t
 addEventListener("keydown", e => { if (e.key === "Escape" && modalKind) closeModal(); });
 $("#btnTheme").onclick = () => openModal("theme", "🎨 Thème");
 $("#btnTools").onclick = () => openModal("tools", "🛠 Outils");
+$("#authTools").onclick = () => openModal("tools", "🛠 Outils");   // accessible sans connexion
 $("#btnAch").onclick = () => openModal("ach", "🏆 Succès");
 $("#btnRemind").onclick = () => openModal("remind", "🧠 Rappels & révision");
 
@@ -1838,9 +1875,10 @@ $("#mBody").addEventListener("click", async e => {
    ============================================================ */
 let toolTab = "pw";
 function renderTools(){
-  $("#mBody").innerHTML = `<div class="seg" style="margin-bottom:14px"><button data-tool="pw" class="${toolTab === "pw" ? "on" : ""}">🔑 Mot de passe</button><button data-tool="qr" class="${toolTab === "qr" ? "on" : ""}">▦ QR code</button></div><div id="toolBody"></div>`;
-  $(".sheet").classList.toggle("wide", toolTab === "qr");
-  if (toolTab === "qr") renderQrTool(); else renderPwTool();
+  $("#mBody").innerHTML = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap"><div class="seg" style="margin:0"><button data-tool="pw" class="${toolTab === "pw" ? "on" : ""}">🔑 Mot de passe</button><button data-tool="qr" class="${toolTab === "qr" ? "on" : ""}">▦ QR code</button><button data-tool="pdf" class="${toolTab === "pdf" ? "on" : ""}">📄 PDF</button></div><button class="btn2" id="toolLink" title="Copier le lien direct vers cet outil">🔗 Lien</button></div><div id="toolBody"></div>`;
+  setToolUrl(toolTab);
+  $(".sheet").classList.add("full"); $(".sheet").classList.toggle("wide", toolTab !== "pw");
+  if (toolTab === "qr") renderQrTool(); else if (toolTab === "pdf") renderPdfTool(); else renderPwTool();
 }
 const QR_DEF = { style:"square", fg:"#000000", bg:"#ffffff", icon:"", size:512, isz:23 };
 const qrIszOf = c => Math.min(30, Math.max(10, parseInt(c.isz, 10) || 23));
@@ -1961,6 +1999,228 @@ $("#mBody").addEventListener("change", e => {
   img.onerror = () => { URL.revokeObjectURL(url); toast("⚠ Image illisible"); };
   img.src = url;
 });
+
+/* ============================================================
+   Outils : PDF (effacer une partie des pages)
+   pdf.js lit le PDF ; les pages modifiées sont rendues en image
+   avec la zone en blanc (le contenu effacé disparaît vraiment) ;
+   pdf-lib assemble le résultat. Tout reste dans le navigateur.
+   ============================================================ */
+const PDF_DEF = { pos:"bottom", pct:50, dpi:200 };
+const pdfCfg = () => { try { return { ...PDF_DEF, ...JSON.parse(localStorage.getItem("notes.pdf") || "{}") }; } catch { return { ...PDF_DEF }; } };
+const pdfSave = c => { try { localStorage.setItem("notes.pdf", JSON.stringify(c)); } catch {} };
+const pdfPctOf = c => Math.min(100, Math.max(1, parseInt(c.pct, 10) || 50));
+const PDF_DPI = [150, 200, 300];
+const PDF_JS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", PDF_WORKER = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+const PDF_LIB = "https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js";
+let pdfDoc = null, pdfBytes = null, pdfName = "", pdfPage = 1, pdfPages = "", pdfBusy = false, pdfThumb = null, pdfPjsP = null;
+const loadScript = (url, test) => new Promise((res, rej) => {
+  if (test()) return res();
+  const el = document.createElement("script"); el.src = url; el.onload = () => test() ? res() : rej(new Error("lib")); el.onerror = () => rej(new Error("lib")); document.head.appendChild(el);
+});
+const loadPdfJs = () => pdfPjsP || (pdfPjsP = (async () => {
+  try {
+    await loadScript(PDF_JS, () => window.pdfjsLib);
+    // le worker est sur un autre domaine : on le charge via un Blob pour que le navigateur l'accepte
+    const code = await (await fetch(PDF_WORKER)).text();
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
+    return window.pdfjsLib;
+  } catch (e) { pdfPjsP = null; throw e; }
+})());
+function pdfParsePages(str, n){            // "1-3,5" -> Set ; vide -> toutes les pages
+  const set = new Set(), t = String(str || "").trim();
+  if (!t) { for (let i = 1; i <= n; i++) set.add(i); return set; }
+  for (const part of t.split(/[,;\s]+/).filter(Boolean)) {
+    const m = part.match(/^(\d+)(?:-(\d+))?$/); if (!m) continue;
+    let a = +m[1], b = m[2] ? +m[2] : a; if (a > b) [a, b] = [b, a];
+    for (let i = Math.max(1, a); i <= Math.min(n, b); i++) set.add(i);
+  }
+  return set;
+}
+function pdfRegion(c, w, h){               // zone effacée {y, h} en pixels
+  const eh = Math.round(h * pdfPctOf(c) / 100);
+  return c.pos === "top" ? { y: 0, h: eh } : { y: h - eh, h: eh };
+}
+async function pdfOpenFile(f){
+  if (!f) return;
+  if (!/pdf$/i.test(f.type) && !/\.pdf$/i.test(f.name)) return toast("⚠ Choisissez un fichier PDF");
+  toast("⏳ Ouverture du PDF…");
+  try {
+    const lib = await loadPdfJs(), bytes = new Uint8Array(await f.arrayBuffer());
+    const doc = await lib.getDocument({ data: bytes.slice() }).promise;
+    pdfDoc?.destroy?.(); pdfDoc = doc; pdfBytes = bytes; pdfName = f.name.replace(/\.pdf$/i, ""); pdfPage = 1; pdfThumb = null;
+    $("#toast").classList.remove("on");
+  } catch (e) {
+    pdfDoc = null; pdfBytes = null;
+    toast(e && e.name === "PasswordException" ? "⚠ PDF protégé par mot de passe : non pris en charge" : e && e.message === "lib" || (e instanceof TypeError) ? "⚠ Bibliothèque PDF non chargée : connexion internet requise" : "⚠ Impossible de lire ce PDF");
+  }
+  if (toolTab === "pdf" && modalKind === "tools") renderPdfTool();
+}
+function renderPdfTool(){
+  const c = pdfCfg(), n = pdfDoc ? pdfDoc.numPages : 0, pct = pdfPctOf(c);
+  $("#toolBody").innerHTML = `<div class="qr-wrap pdf"><div class="qr-left">
+    <div class="pw-row"><b>Fichier</b><span class="pw-str" style="margin:0;word-break:break-all">${pdfDoc ? esc(pdfName) + ".pdf · " + n + " page" + (n > 1 ? "s" : "") : "aucun"}</span></div>
+    <div class="pw-row"><b>Qualité</b><div class="qr-chips">${PDF_DPI.map(d => `<button class="btn2 ${d === c.dpi ? "on" : ""}" data-pd="${d}">${d} dpi</button>`).join("")}</div></div>
+    <p class="note" style="text-align:left">Cliquez ou faites glisser sur la page pour choisir la zone à effacer (au doigt : déplacez la pastille rouge). Les pages modifiées sont converties en image : la zone effacée est réellement supprimée (le texte n'est plus récupérable). Les autres pages restent inchangées. Le fichier ne quitte pas votre appareil.</p>
+  </div><div class="qr-right">
+    ${pdfDoc ? `<div class="pdf-thumb"><div class="pdf-stage" id="pdfStage"><canvas id="pdfCv" aria-label="Miniature de la page"></canvas><div class="pdf-handle" id="pdfHandle"><span class="pdf-knob" id="pdfKnob"></span></div></div></div>
+      <div class="pdf-nav"><button id="pdfPrev" aria-label="Page précédente">‹</button><span id="pdfNum"></span><button id="pdfNext" aria-label="Page suivante">›</button></div>`
+      : `<label class="pdf-drop" id="pdfDrop" for="pdfFile">Déposez un PDF ici<br>ou cliquez pour le choisir</label>`}
+    <div class="cp-tools pdf-btns"><button class="btn2" id="pdfPick">📂 ${pdfDoc ? "Changer de PDF…" : "Choisir un PDF…"}</button><button class="btn2 main" id="pdfGo" ${pdfDoc ? "" : "disabled"}>⬇ Effacer et télécharger</button>
+      <input type="file" id="pdfFile" accept="application/pdf,.pdf" class="hidden"></div>
+    <div class="pdf-ctl">
+      <div class="pw-row"><b>Zone</b><div class="qr-chips">
+        <button class="btn2 ${c.pos === "bottom" ? "on" : ""}" data-pp="bottom">Partie basse</button><button class="btn2 ${c.pos === "top" ? "on" : ""}" data-pp="top">Partie haute</button></div></div>
+      <div class="pw-row"><b>Hauteur</b><input type="number" id="pdfPct" min="1" max="100" step="1" value="${pct}" inputmode="numeric" aria-label="Pourcentage de la page à effacer"><span class="pw-str" style="margin:0">% de la page</span>
+        <div class="qr-chips">${[25, 33, 50, 75].map(v => `<button class="btn2 ${v === pct ? "on" : ""}" data-pv="${v}">${v}%</button>`).join("")}</div></div>
+      <div class="pw-row"><b>Pages</b><input type="text" id="pdfPages" class="pdf-pages" placeholder="Toutes (ex. 1-3,5)" value="${esc(pdfPages)}" autocomplete="off" spellcheck="false" aria-label="Pages à modifier"><span class="pw-str" id="pdfInfo" style="margin:0"></span></div>
+    </div>
+  </div></div>`;
+  if (pdfDoc) pdfPreview();
+}
+async function pdfPreview(){
+  const cv = $("#pdfCv"); if (!cv || !pdfDoc) return;
+  const c = pdfCfg(), n = pdfDoc.numPages, set = pdfParsePages(pdfPages, n);
+  pdfPage = Math.min(n, Math.max(1, pdfPage));
+  $("#pdfNum").textContent = `Page ${pdfPage} / ${n}`; $("#pdfPrev").disabled = pdfPage <= 1; $("#pdfNext").disabled = pdfPage >= n;
+  $("#pdfInfo").textContent = set.size === n ? "" : set.size ? `${set.size} page${set.size > 1 ? "s" : ""} concernée${set.size > 1 ? "s" : ""}` : "aucune page valide";
+  const pct = pdfPctOf(c), hy = c.pos === "top" ? pct : 100 - pct, hd = $("#pdfHandle");
+  if (hd) { hd.style.top = hy + "%"; hd.dataset.edge = hy < 8 ? "t" : hy > 92 ? "b" : ""; $("#pdfKnob").textContent = `⇕ ${pct} %`; }
+  if (!pdfThumb || pdfThumb.n !== pdfPage) {          // la page n'est rendue qu'une fois ; l'effacement se redessine instantanément
+    const want = pdfPage;
+    try {
+      const page = await pdfDoc.getPage(want), vp0 = page.getViewport({ scale: 1 }), vp = page.getViewport({ scale: 720 / vp0.width });
+      const off = document.createElement("canvas"); off.width = Math.round(vp.width); off.height = Math.round(vp.height);
+      await page.render({ canvasContext: off.getContext("2d"), viewport: vp, background: "#ffffff" }).promise;
+      if (want !== pdfPage || !$("#pdfCv")) return;
+      pdfThumb = { n: want, canvas: off };
+    } catch { return; }
+  }
+  const src = pdfThumb.canvas, g = cv.getContext("2d"); cv.width = src.width; cv.height = src.height;
+  g.drawImage(src, 0, 0);
+  if (set.has(pdfPage)) {
+    const r = pdfRegion(c, cv.width, cv.height);
+    g.fillStyle = "#ffffff"; g.fillRect(0, r.y, cv.width, r.h);
+    g.fillStyle = "rgba(220,38,38,.10)"; g.fillRect(0, r.y, cv.width, r.h);
+    g.strokeStyle = "#dc2626"; g.lineWidth = Math.max(2, cv.width / 170); g.setLineDash([cv.width / 45, cv.width / 60]);
+    const ly = c.pos === "top" ? r.h : r.y; g.beginPath(); g.moveTo(0, ly); g.lineTo(cv.width, ly); g.stroke(); g.setLineDash([]);
+    g.fillStyle = "#dc2626"; g.font = `600 ${Math.round(cv.width / 16)}px system-ui,sans-serif`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("zone effacée", cv.width / 2, r.y + r.h / 2);
+  }
+}
+async function pdfExport(){
+  if (!pdfDoc || pdfBusy) return;
+  const c = pdfCfg(), n = pdfDoc.numPages, set = pdfParsePages(pdfPages, n), btn = $("#pdfGo");
+  if (!set.size) return toast("⚠ Aucune page valide à modifier");
+  pdfBusy = true; btn.disabled = true;
+  try {
+    await loadScript(PDF_LIB, () => window.PDFLib);
+    const { PDFDocument } = window.PDFLib, out = await PDFDocument.create(), scale = c.dpi / 72;
+    let src = null, srcFail = false;
+    for (let i = 1; i <= n; i++) {
+      btn.textContent = `⏳ Page ${i} / ${n}…`; await new Promise(r => setTimeout(r));
+      const erase = set.has(i);
+      if (!erase && !srcFail) {                       // page inchangée : copiée telle quelle (reste vectorielle)
+        try { src = src || await PDFDocument.load(pdfBytes); const [pg] = await out.copyPages(src, [i - 1]); out.addPage(pg); continue; }
+        catch { srcFail = true; }                     // PDF chiffré/atypique : on retombe sur l'image
+      }
+      const page = await pdfDoc.getPage(i), vp1 = page.getViewport({ scale: 1 }), vp = page.getViewport({ scale });
+      const cv = document.createElement("canvas"); cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+      await page.render({ canvasContext: cv.getContext("2d"), viewport: vp, background: "#ffffff" }).promise;
+      if (erase) { const r = pdfRegion(c, cv.width, cv.height), g = cv.getContext("2d"); g.fillStyle = "#ffffff"; g.fillRect(0, r.y - 1, cv.width, r.h + 2); }
+      const blob = await new Promise(r => cv.toBlob(r, "image/jpeg", 0.92)), img = await out.embedJpg(await blob.arrayBuffer());
+      const np = out.addPage([vp1.width, vp1.height]); np.drawImage(img, { x: 0, y: 0, width: vp1.width, height: vp1.height });
+      cv.width = cv.height = 0;
+    }
+    const bytes = await out.save(), a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })); a.download = `${pdfName || "document"}-efface.pdf`; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    toast(`⬇ PDF téléchargé (${set.size} page${set.size > 1 ? "s" : ""} modifiée${set.size > 1 ? "s" : ""})`);
+  } catch (e) { toast(e && e.message === "lib" ? "⚠ Bibliothèque PDF non chargée : connexion internet requise" : "⚠ Échec de la création du PDF"); }
+  pdfBusy = false; const b = $("#pdfGo"); if (b) { b.disabled = false; b.textContent = "⬇ Effacer et télécharger"; }
+}
+$("#mBody").addEventListener("click", e => {
+  if (modalKind !== "tools" || toolTab !== "pdf") return;
+  const pp = e.target.closest("[data-pp]"), pv = e.target.closest("[data-pv]"), pd = e.target.closest("[data-pd]");
+  if (e.target.closest("#pdfPick")) return $("#pdfFile").click();
+  if (pp) { const c = pdfCfg(); c.pos = pp.dataset.pp; pdfSave(c); $$("[data-pp]").forEach(b => b.classList.toggle("on", b === pp)); return pdfPreview(); }
+  if (pv) { const c = pdfCfg(); c.pct = +pv.dataset.pv; pdfSave(c); $("#pdfPct").value = c.pct; $$("[data-pv]").forEach(b => b.classList.toggle("on", b === pv)); return pdfPreview(); }
+  if (pd) { const c = pdfCfg(); c.dpi = +pd.dataset.pd; pdfSave(c); $$("[data-pd]").forEach(b => b.classList.toggle("on", b === pd)); return; }
+  if (e.target.closest("#pdfPrev")) { pdfPage--; return pdfPreview(); }
+  if (e.target.closest("#pdfNext")) { pdfPage++; return pdfPreview(); }
+  if (e.target.closest("#pdfGo")) return pdfExport();
+});
+$("#mBody").addEventListener("input", e => {
+  if (modalKind !== "tools" || toolTab !== "pdf") return;
+  if (e.target.id === "pdfPct") { const v = parseInt(e.target.value, 10); if (v >= 1 && v <= 100) { const c = pdfCfg(); c.pct = v; pdfSave(c); $$("[data-pv]").forEach(b => b.classList.toggle("on", +b.dataset.pv === v)); pdfPreview(); } }
+  else if (e.target.id === "pdfPages") { pdfPages = e.target.value; pdfPreview(); }
+});
+$("#mBody").addEventListener("change", e => {
+  if (modalKind !== "tools" || toolTab !== "pdf") return;
+  if (e.target.id === "pdfFile") { const f = e.target.files[0]; e.target.value = ""; pdfOpenFile(f); }
+  else if (e.target.id === "pdfPct") { const c = pdfCfg(); c.pct = pdfPctOf({ pct: e.target.value }); pdfSave(c); e.target.value = c.pct; pdfPreview(); }
+});
+/* Cliquer / glisser sur la page : règle la partie (haut ou bas selon la moitié cliquée) et le pourcentage */
+let pdfDrag = null;
+function pdfCutFrom(ev, pos){
+  const st = $("#pdfStage"); if (!st) { pdfDrag = null; return null; }
+  const r = st.getBoundingClientRect(), fy = Math.min(1, Math.max(0, (ev.clientY - r.top) / r.height));
+  return Math.min(100, Math.max(1, Math.round((pos === "top" ? fy : 1 - fy) * 100)));
+}
+function pdfSetCut(pos, pct){
+  if (pct == null) return;
+  const c = pdfCfg(); c.pos = pos; c.pct = pct; pdfSave(c);
+  $("#pdfPct").value = pct;
+  $$("[data-pp]").forEach(b => b.classList.toggle("on", b.dataset.pp === pos));
+  $$("[data-pv]").forEach(b => b.classList.toggle("on", +b.dataset.pv === pct));
+  pdfPreview();
+}
+$("#mBody").addEventListener("pointerdown", e => {
+  if (modalKind !== "tools" || toolTab !== "pdf" || e.button > 0) return;
+  const st = e.target.closest("#pdfStage"); if (!st) return;
+  const onKnob = !!e.target.closest("#pdfKnob");
+  if (e.pointerType === "touch" && !onKnob) return;        // au doigt, seule la pastille se déplace (le reste fait défiler)
+  e.preventDefault();
+  const r = st.getBoundingClientRect();
+  pdfDrag = { pos: onKnob ? pdfCfg().pos : (e.clientY - r.top) / r.height < 0.5 ? "top" : "bottom" };
+  pdfSetCut(pdfDrag.pos, pdfCutFrom(e, pdfDrag.pos));
+});
+addEventListener("pointermove", e => { if (pdfDrag) pdfSetCut(pdfDrag.pos, pdfCutFrom(e, pdfDrag.pos)); });
+addEventListener("pointerup", () => { pdfDrag = null; });
+addEventListener("pointercancel", () => { pdfDrag = null; });
+$("#mBody").addEventListener("dragover", e => { if (modalKind === "tools" && toolTab === "pdf" && e.dataTransfer?.types?.includes("Files")) { e.preventDefault(); $("#pdfDrop")?.classList.add("over"); } });
+$("#mBody").addEventListener("dragleave", () => $("#pdfDrop")?.classList.remove("over"));
+$("#mBody").addEventListener("drop", e => { if (modalKind === "tools" && toolTab === "pdf" && e.dataTransfer?.files?.length) { e.preventDefault(); pdfOpenFile(e.dataTransfer.files[0]); } });
+
+/* ============================================================
+   Liens directs : index.html#pdf  ·  .../index/pdf (si le serveur renvoie
+   index.html pour ce chemin)  ·  #qr  #mdp  #outils
+   ============================================================ */
+const TOOL_KEYS = { pdf:"pdf", qr:"qr", qrcode:"qr", mdp:"pw", password:"pw", motdepasse:"pw", pw:"pw" };
+const KEY_OF = { pw:"mdp", qr:"qr", pdf:"pdf" };
+let toolPathBase = null;       // ex. "/index/" quand la page a été ouverte via /index/pdf
+{ const seg = location.pathname.split("/"), last = (seg[seg.length - 1] || "").toLowerCase();
+  if (/^https?:$/.test(location.protocol) && TOOL_KEYS[last]) toolPathBase = seg.slice(0, -1).join("/") + "/"; }
+function toolUrl(tab){
+  return toolPathBase !== null ? location.origin + toolPathBase + KEY_OF[tab] : location.href.split("#")[0] + "#" + KEY_OF[tab];
+}
+function setToolUrl(tab){ try { history.replaceState(null, "", toolPathBase !== null ? toolPathBase + KEY_OF[tab] : "#" + KEY_OF[tab]); } catch {} }
+function clearToolUrl(){ try { history.replaceState(null, "", toolPathBase !== null ? toolPathBase + location.search : location.pathname + location.search); } catch {} }
+function openToolFromUrl(){
+  const fromHash = location.hash.slice(1).toLowerCase().split("/").filter(Boolean);
+  const parts = fromHash.length ? fromHash : toolPathBase !== null ? [location.pathname.split("/").pop().toLowerCase()] : [];
+  if (!parts.length) return;
+  const last = parts[parts.length - 1], isTools = /^(outils|tools)$/.test(parts[0]);
+  if (!TOOL_KEYS[last] && !(isTools && parts.length === 1)) return;
+  if (TOOL_KEYS[last]) toolTab = TOOL_KEYS[last];
+  if (modalKind === "tools") renderTools(); else openModal("tools", "🛠 Outils");
+}
+$("#mBody").addEventListener("click", async e => {
+  if (!e.target.closest("#toolLink")) return;
+  const url = toolUrl(toolTab);
+  try { await navigator.clipboard.writeText(url); toast("🔗 Lien copié : " + url); } catch { toast(url); }
+});
+addEventListener("hashchange", openToolFromUrl);
+openToolFromUrl();
 </script>
 </body>
 </html>
