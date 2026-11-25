@@ -380,7 +380,7 @@ input{font:inherit;color:inherit}
 .cv-files{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
 .cv-file{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg2);font-size:12.5px;max-width:100%;word-break:break-all}
 .cv-file button{color:var(--muted);padding:0 2px}
-.cv-stage{cursor:move}
+.cv-stage{cursor:move;touch-action:none}
 .cv-frame{position:absolute;border:2px dashed var(--accent);box-sizing:border-box;touch-action:none;cursor:move}
 .cv-knob{position:absolute;right:-10px;bottom:-10px;width:20px;height:20px;border-radius:6px;background:var(--accent);border:2px solid #fff;cursor:nwse-resize;touch-action:none;box-shadow:0 1px 4px rgba(0,0,0,.45)}
 .pdf-thumb{overflow:hidden}
@@ -2326,17 +2326,13 @@ function renderConvTool(){
     <div class="pw-row"><b>Ajustement</b><div class="qr-chips">${chips(CV_FITS, c.fit, "cfit")}</div></div>
     <div class="pw-row"><b>Résolution</b><div class="qr-chips">${PDF_DPI.map(d => `<button class="btn2 ${d === c.dpi ? "on" : ""}" data-cd="${d}">${d} dpi</button>`).join("")}</div></div>
     <div class="pw-row"><b>Fond</b><input type="color" id="cvBg" value="${c.bg}" aria-label="Couleur de fond"></div>
-    <p class="note" style="text-align:left">Déplacez la source en la faisant glisser dans la page, redimensionnez-la avec le carré en bas à droite ou avec la molette. Plusieurs fichiers donnent plusieurs pages (PDF) ou un fichier ZIP (images). Les pages PDF sont converties en image. Rien ne quitte votre appareil.</p>
+    <p class="note" style="text-align:left">Déplacez la source en la faisant glisser dans la page, redimensionnez-la en pinçant à deux doigts, avec la molette ou avec le carré en bas à droite. Plusieurs fichiers donnent plusieurs pages (PDF) ou un fichier ZIP (images). Les pages PDF sont converties en image. Rien ne quitte votre appareil.</p>
   </div><div class="qr-right">
     ${n ? `<div class="pdf-thumb"><div class="pdf-stage cv-stage" id="cvStage"><canvas id="cvCv" aria-label="Page de sortie"></canvas><div class="cv-frame" id="cvFrame"><span class="cv-knob" id="cvKnob" title="Redimensionner"></span></div></div></div>
       <div class="pdf-nav ${n > 1 ? "" : "hidden"}"><button id="cvPrev" aria-label="Page précédente">‹</button><span id="cvNum"></span><button id="cvNext" aria-label="Page suivante">›</button></div>`
       : `<label class="pdf-drop" id="cvDrop" for="cvFile">Déposez des images ou des PDF ici<br>ou cliquez pour les choisir</label>`}
-    <div class="cp-tools pdf-btns"><button class="btn2" id="cvPick">📂 ${fcount ? "Ajouter des fichiers…" : "Choisir des fichiers…"}</button><button class="btn2 main" id="cvGo" ${n ? "" : "disabled"}>⬇ Convertir et télécharger</button>
+    <div class="cp-tools pdf-btns"><button class="btn2" id="cvPick">📂 ${fcount ? "Ajouter des fichiers…" : "Choisir des fichiers…"}</button><button class="btn2 ${n ? "" : "hidden"}" id="cvReset" title="Remettre la source à sa taille et au centre">↺ Recentrer</button><button class="btn2 main" id="cvGo" ${n ? "" : "disabled"}>⬇ Convertir et télécharger</button>
       <input type="file" id="cvFile" accept="application/pdf,.pdf,image/*" multiple class="hidden"></div>
-    <div class="pdf-ctl ${n ? "" : "hidden"}">
-      <div class="pw-row"><b>Taille source</b><input type="number" id="cvZ" min="5" max="1000" step="5" value="${Math.round(cvPlace.z * 100)}" aria-label="Taille de la source en pourcentage"><span class="pw-str" style="margin:0">%</span><button class="btn2" id="cvReset">↺ Recentrer</button></div>
-      <div class="pw-row"><b>Position</b><span class="pw-str" style="margin:0">X</span><input type="number" id="cvX" min="-200" max="200" step="1" value="${Math.round(cvPlace.ox * 100)}" aria-label="Décalage horizontal en %"><span class="pw-str" style="margin:0">Y</span><input type="number" id="cvY" min="-200" max="200" step="1" value="${Math.round(cvPlace.oy * 100)}" aria-label="Décalage vertical en %"><span class="pw-str" style="margin:0">% de la page</span></div>
-    </div>
   </div></div>`;
   if (n) cvPreview();
 }
@@ -2346,7 +2342,6 @@ function cvDraw(skip){
   const ctx = cv.getContext("2d"); ctx.fillStyle = c.bg; ctx.fillRect(0, 0, cv.width, cv.height);
   ctx.imageSmoothingQuality = "high"; ctx.drawImage(m.thumb, g.x * k, g.y * k, g.w * k, g.h * k);
   const fr = $("#cvFrame"); fr.style.left = g.x / g.W * 100 + "%"; fr.style.top = g.y / g.H * 100 + "%"; fr.style.width = g.w / g.W * 100 + "%"; fr.style.height = g.h / g.H * 100 + "%";
-  for (const [id, v] of [["cvZ", cvPlace.z], ["cvX", cvPlace.ox], ["cvY", cvPlace.oy]]) if (id !== skip && $("#" + id)) $("#" + id).value = Math.round(v * 100);
 }
 async function cvPreview(){
   const my = ++cvTok, n = cvPages.length; if (!$("#cvCv") || !n) return;
@@ -2413,38 +2408,66 @@ $("#mBody").addEventListener("input", e => {
   const id = e.target.id, v = parseFloat(e.target.value), c = cvCfg();
   if (id === "cvBg") { c.bg = e.target.value; cvSave(c); return cvDraw(); }
   if (id === "cvCw" || id === "cvCh") { if (v >= 10 && v <= 2000) { c[id === "cvCw" ? "cw" : "ch"] = v; cvSave(c); cvDraw(id); } return; }
-  if (!Number.isFinite(v)) return;
-  if (id === "cvZ") cvPlace.z = cvClamp(v / 100, 0.05, 10); else if (id === "cvX") cvPlace.ox = cvClamp(v / 100, -2, 2); else if (id === "cvY") cvPlace.oy = cvClamp(v / 100, -2, 2); else return;
-  cvDraw(id);
 });
 $("#mBody").addEventListener("change", e => {
   if (modalKind !== "tools" || toolTab !== "convert") return;
   if (e.target.id === "cvFile") { const fl = [...e.target.files]; e.target.value = ""; cvAddFiles(fl); }
-  else if (/^cv[ZXY]$|^cvC[wh]$/.test(e.target.id)) cvDraw();      // remet une valeur valide si la saisie était hors limites
+  else if (/^cvC[wh]$/.test(e.target.id)) cvDraw();      // remet une valeur valide si la saisie était hors limites
 });
+const cvPtrs = new Map();       // doigts posés sur la page (pour pincer)
+let cvPinch = null;
+function cvStartDrag(x, y, knob){
+  const st = $("#cvStage"); if (!st || !cvMeta(cvIdx)) return;
+  const r = st.getBoundingClientRect(), g = cvGeom(cvIdx);
+  cvDrag = { knob, sx: x, sy: y, ox: cvPlace.ox, oy: cvPlace.oy, left: g.x / g.W, top: g.y / g.H, rw: r.width, rh: r.height, rl: r.left, bw: g.bw, a: g.a, W: g.W, H: g.H };
+}
+function cvStartPinch(){
+  const st = $("#cvStage"); if (!st || !cvMeta(cvIdx)) return;
+  const [p1, p2] = [...cvPtrs.values()], r = st.getBoundingClientRect(), g = cvGeom(cvIdx);
+  const mx = ((p1.x + p2.x) / 2 - r.left) / r.width, my = ((p1.y + p2.y) / 2 - r.top) / r.height;
+  cvDrag = null;
+  cvPinch = { d0: Math.hypot(p1.x - p2.x, p1.y - p2.y) || 1, z0: cvPlace.z, u: (mx - g.x / g.W) / (g.w / g.W), v: (my - g.y / g.H) / (g.h / g.H), bw: g.bw, a: g.a, W: g.W, H: g.H };
+}
 $("#mBody").addEventListener("pointerdown", e => {
   if (modalKind !== "tools" || toolTab !== "convert" || e.button > 0) return;
   const st = e.target.closest("#cvStage"); if (!st || !cvMeta(cvIdx)) return;
-  const knob = !!e.target.closest("#cvKnob"), r = st.getBoundingClientRect(), g = cvGeom(cvIdx);
-  if (e.pointerType === "touch" && !e.target.closest("#cvFrame")) return;
   e.preventDefault();
-  cvDrag = { knob, sx: e.clientX, sy: e.clientY, ox: cvPlace.ox, oy: cvPlace.oy, left: g.x / g.W, top: g.y / g.H, rw: r.width, rh: r.height, rl: r.left, bw: g.bw, a: g.a, W: g.W, H: g.H };
+  if (e.pointerType === "touch") {
+    cvPtrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (cvPtrs.size === 2) return cvStartPinch();
+    if (cvPtrs.size > 2) return;
+  }
+  cvStartDrag(e.clientX, e.clientY, !!e.target.closest("#cvKnob"));
 });
 addEventListener("pointermove", e => {
+  if (!$("#cvStage")) { cvDrag = cvPinch = null; cvPtrs.clear(); return; }
+  if (cvPtrs.has(e.pointerId)) cvPtrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (cvPinch && cvPtrs.size >= 2) {             // pincer : zoom centré sur le point entre les doigts
+    const [p1, p2] = [...cvPtrs.values()], r = $("#cvStage").getBoundingClientRect(), d = cvPinch;
+    const mx = ((p1.x + p2.x) / 2 - r.left) / r.width, my = ((p1.y + p2.y) / 2 - r.top) / r.height;
+    cvPlace.z = cvClamp(d.z0 * Math.hypot(p1.x - p2.x, p1.y - p2.y) / d.d0, 0.05, 10);
+    const wf = d.bw * cvPlace.z / d.W, hf = d.bw * cvPlace.z / d.a / d.H;
+    cvPlace.ox = mx - d.u * wf + wf / 2 - 0.5; cvPlace.oy = my - d.v * hf + hf / 2 - 0.5;
+    return cvDraw();
+  }
   const d = cvDrag; if (!d) return;
-  if (!$("#cvStage")) { cvDrag = null; return; }
   if (d.knob) {                                  // coin bas-droit : le coin haut-gauche reste fixe, les proportions aussi
-    const wf = Math.max(0.02, (e.clientX - d.rl) / d.rw - d.left), w = wf * d.W, h = w / d.a;
-    cvPlace.z = cvClamp(w / d.bw, 0.05, 10); const w2 = d.bw * cvPlace.z, h2 = w2 / d.a;
+    const wf = Math.max(0.02, (e.clientX - d.rl) / d.rw - d.left);
+    cvPlace.z = cvClamp(wf * d.W / d.bw, 0.05, 10); const w2 = d.bw * cvPlace.z, h2 = w2 / d.a;
     cvPlace.ox = d.left + w2 / d.W / 2 - 0.5; cvPlace.oy = d.top + h2 / d.H / 2 - 0.5;
   } else { cvPlace.ox = d.ox + (e.clientX - d.sx) / d.rw; cvPlace.oy = d.oy + (e.clientY - d.sy) / d.rh; }
   cvDraw();
 });
-addEventListener("pointerup", () => { cvDrag = null; });
-addEventListener("pointercancel", () => { cvDrag = null; });
+const cvPointerEnd = e => {
+  cvPtrs.delete(e.pointerId);
+  if (cvPinch && cvPtrs.size < 2) { cvPinch = null; const [p] = [...cvPtrs.values()]; if (p) cvStartDrag(p.x, p.y, false); }   // un doigt reste : on continue à déplacer sans saut
+  else if (!cvPtrs.size) cvDrag = null;
+  if (e.pointerType !== "touch") cvDrag = null;
+};
+addEventListener("pointerup", cvPointerEnd); addEventListener("pointercancel", cvPointerEnd);
 $("#mBody").addEventListener("wheel", e => {
   if (modalKind !== "tools" || toolTab !== "convert" || !e.target.closest("#cvStage") || !cvMeta(cvIdx)) return;
-  e.preventDefault(); cvPlace.z = cvClamp(cvPlace.z * Math.exp(-e.deltaY * 0.0015), 0.05, 10); cvDraw();
+  e.preventDefault(); cvPlace.z = cvClamp(cvPlace.z * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)), 0.05, 10); cvDraw();   // ctrl+molette = pincement du pavé tactile
 }, { passive:false });
 $("#mBody").addEventListener("dragover", e => { if (modalKind === "tools" && toolTab === "convert" && e.dataTransfer?.types?.includes("Files")) { e.preventDefault(); $("#cvDrop")?.classList.add("over"); } });
 $("#mBody").addEventListener("dragleave", () => $("#cvDrop")?.classList.remove("over"));
