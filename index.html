@@ -2,10 +2,15 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
+<!-- Sécurité : limite les sources de scripts, connexions et images (voir README sécurité) -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdn.jsdelivr.net; connect-src 'self' https://*.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; frame-src https://note-88311.firebaseapp.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#7719aa">
 <script>try{var t=localStorage.getItem("notes.theme");if(/^(light|dark|soft|night|coffee|slate)$/.test(t))document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <title>Mes Notes</title>
+<!-- DOMPurify : nettoie le HTML des notes avant affichage (empreinte SRI vérifiée par le navigateur) -->
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.4.17/dist/purify.min.js" integrity="sha384-P0JNneQf81HOl9VwNXK76cQ9VMD6Nfsnepxb0cCOg8+UzEdzgPHAPV4wVQrvYQSx" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
 /* Thèmes : clair (défaut) · sombre · sombre doux · automatique (sans data-theme = suit l'appareil) */
 :root{
@@ -349,6 +354,7 @@ input{font:inherit;color:inherit}
 .pdf-handle[data-edge="b"] .pdf-knob{transform:translateY(-100%)}
 .pdf-ctl{margin-top:4px}
 .pdf-btns{justify-content:center;margin:6px 0 10px}
+.pdf-btns .btn2{padding:12px 16px}
 .pdf-ctl .pw-row{margin-bottom:8px}
 @media (min-width:900px){.qr-wrap.pdf .qr-right{order:0}}
 .pw-row input[type=text].pdf-pages{width:190px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font-size:15px}
@@ -376,7 +382,9 @@ input{font:inherit;color:inherit}
 }
 .toolseg{overflow-x:auto;scrollbar-width:none;min-width:0}
 .toolseg::-webkit-scrollbar{display:none}
-.toolseg button{flex:none;padding:8px 12px}
+.toolseg button{flex:none;padding:12px 14px}
+.ico-qr{width:1.15em;height:1.15em;vertical-align:-.2em}
+#toolLink{align-self:stretch;padding:0 14px;font-size:16px}
 .cv-files{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
 .cv-file{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg2);font-size:12.5px;max-width:100%;word-break:break-all}
 .cv-file button{color:var(--muted);padding:0 2px}
@@ -533,7 +541,13 @@ const $$ = s => [...document.querySelectorAll(s)];
 const uid = () => Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4);
 const COLORS = ["#8b5cf6","#f97316","#10b981","#ef4444","#3b82f6","#eab308","#ec4899","#14b8a6"];
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const plain = html => { const d = document.createElement("div"); d.innerHTML = html.replace(/<img[^>]*>/gi, " "); return (d.textContent || "").replace(/\u200b/g, "").replace(/\s+/g," ").trim(); };
+/* Sécurité : DOMParser crée un document inerte (aucun script ni gestionnaire d'événement ne s'exécute) */
+const inertBody = html => new DOMParser().parseFromString(String(html ?? ""), "text/html").body;
+/* Sécurité : nettoyage du HTML des notes avant tout affichage. Renvoie null si DOMPurify n'a pas pu être chargé. */
+const PURIFY_CFG = { ADD_ATTR: ["target"], FORBID_TAGS: ["style", "form", "link", "meta", "base", "svg", "math"], FORBID_ATTR: ["srcset", "formaction"] };
+if (window.DOMPurify) DOMPurify.addHook("afterSanitizeAttributes", n => { if (n.tagName === "A" && n.hasAttribute("href")) { n.setAttribute("target", "_blank"); n.setAttribute("rel", "noopener noreferrer"); } });
+const clean = html => window.DOMPurify ? DOMPurify.sanitize(String(html ?? ""), PURIFY_CFG) : null;
+const plain = html => { const d = inertBody(String(html ?? "").replace(/<img[^>]*>/gi, " ")); return (d.textContent || "").replace(/\u200b/g, "").replace(/\s+/g," ").trim(); };
 const fmtDate = t => new Date(t).toLocaleString("fr-FR", { weekday:"long", day:"numeric", month:"long", year:"numeric", hour:"2-digit", minute:"2-digit" });
 const fmtShort = t => { const d = new Date(t), n = new Date(); return d.toDateString() === n.toDateString() ? d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}) : d.toLocaleDateString("fr-FR",{day:"numeric",month:"short"}); };
 let tt; function toast(m){ const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("on"), 2600); }
@@ -780,7 +794,17 @@ function renderEditor(){
   mdMode = false; $("#mdBox").classList.add("hidden"); $("#btnMd").classList.remove("on");
   if (!has) { watchRead(); return; }
   $("#title").value = p.title; $("#title").placeholder = isC ? "Titre de la fiche mémoire" : "Titre de la page";
-  $("#editor").innerHTML = isC ? "" : p.html; setMeta(); baseWords(p); watchRead();
+  const ed = $("#editor");
+  if (isC) { ed.innerHTML = ""; ed.contentEditable = "true"; }
+  else {
+    const safe = clean(p.html);
+    if (safe !== null) { ed.innerHTML = safe; ed.contentEditable = "true"; }
+    else {   // DOMPurify indisponible : lecture seule en texte brut, pour ne rien exécuter ni écraser la mise en forme
+      ed.textContent = plain(p.html); ed.contentEditable = "false";
+      toast("⚠ Protection indisponible (hors ligne ?) : note en lecture seule");
+    }
+  }
+  setMeta(); baseWords(p); watchRead();
   if (isC) renderCards();
 }
 
@@ -970,7 +994,7 @@ function mdToHtml(src){
 
 /* ---------- Markdown : HTML -> Markdown ---------- */
 function htmlToMd(html, embed){
-  const root = document.createElement("div"); root.innerHTML = html;
+  const root = inertBody(html);   // sécurité : document inerte
   const imgSrc = src => { if (embed || !/^data:/.test(src)) return src; imgStore.push(src); return "img:" + (imgStore.length - 1); };
   const wrap = (s, mk) => { const m = /^(\s*)([\s\S]*?)(\s*)$/.exec(s); return m[2] ? m[1] + mk + m[2] + mk + m[3] : s; };
   const inl = n => {
@@ -1041,7 +1065,7 @@ function setMd(on){
     imgStore.length = 0; box.value = htmlToMd(ed.innerHTML, false); mdMode = true;
     ed.classList.add("hidden"); box.classList.remove("hidden"); box.focus();
   } else {
-    ed.innerHTML = mdToHtml(box.value); mdMode = false;
+    const h = mdToHtml(box.value); ed.innerHTML = clean(h) ?? h; mdMode = false;
     box.classList.add("hidden"); ed.classList.remove("hidden"); touch();
   }
   $("#btnMd").classList.toggle("on", mdMode);
@@ -1122,10 +1146,17 @@ $("#editor").addEventListener("input", e => {              // **gras** *italique
   }
 });
 $("#editor").addEventListener("paste", e => {              // coller du texte Markdown => converti en mise en forme
-  const cd = e.clipboardData; if (!cd || cd.types.includes("text/html")) return;
+  const cd = e.clipboardData; if (!cd) return;
+  if (cd.types.includes("text/html")) {      // sécurité : le HTML collé est nettoyé avant insertion
+    e.preventDefault();
+    const h = clean(cd.getData("text/html"));
+    if (h !== null) document.execCommand("insertHTML", false, h);
+    else document.execCommand("insertText", false, cd.getData("text/plain"));
+    return;
+  }
   const txt = cd.getData("text/plain");
   if (/^(#{1,6}\s|\s*[-*+]\s|\s*\d+[.)]\s|>\s|```|---\s*$)|\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\)/m.test(txt)) {
-    e.preventDefault(); document.execCommand("insertHTML", false, mdToHtml(txt));
+    e.preventDefault(); const h = mdToHtml(txt); document.execCommand("insertHTML", false, clean(h) ?? h);
   }
 });
 
@@ -1886,7 +1917,7 @@ $("#mBody").addEventListener("click", async e => {
    ============================================================ */
 let toolTab = "pw";
 function renderTools(){
-  $("#mBody").innerHTML = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap"><div class="seg toolseg" style="margin:0"><button data-tool="pw" class="${toolTab === "pw" ? "on" : ""}">🔑 Mot de passe</button><button data-tool="qr" class="${toolTab === "qr" ? "on" : ""}">▦ QR code</button><button data-tool="pdf" class="${toolTab === "pdf" ? "on" : ""}">📄 PDF / Image</button><button data-tool="convert" class="${toolTab === "convert" ? "on" : ""}">🔄 Conversion</button></div><button class="btn2" id="toolLink" title="Copier le lien direct vers cet outil">🔗 Lien</button></div><div id="toolBody"></div>`;
+  $("#mBody").innerHTML = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap"><div class="seg toolseg" style="margin:0"><button data-tool="pw" class="${toolTab === "pw" ? "on" : ""}"><svg class="ico-qr" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="16" r="4.5"/><path d="M11.2 12.8L20.5 3.5"/><path d="M16.5 7.5l2.5 2.5M19 5l2 2"/><circle cx="7" cy="17" r="1" fill="currentColor" stroke="none"/></svg> MDP</button><button data-tool="qr" class="${toolTab === "qr" ? "on" : ""}"><svg class="ico-qr" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path fill-rule="evenodd" d="M3 3h7v7H3zm2 2v3h3V5zM14 3h7v7h-7zm2 2v3h3V5zM3 14h7v7H3zm2 2v3h3v-3z"/><rect x="5.75" y="5.75" width="1.5" height="1.5"/><rect x="16.75" y="5.75" width="1.5" height="1.5"/><rect x="5.75" y="16.75" width="1.5" height="1.5"/><rect x="13" y="13" width="3" height="3" rx=".6"/><rect x="18" y="13" width="3" height="3" rx=".6"/><rect x="15.5" y="15.5" width="3" height="3" rx=".6"/><rect x="13" y="18" width="3" height="3" rx=".6"/><rect x="18" y="18" width="3" height="3" rx=".6"/></svg> QR</button><button data-tool="pdf" class="${toolTab === "pdf" ? "on" : ""}"><svg class="ico-qr" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12V3.5a1.5 1.5 0 0 1 1.5-1.5H14l5 5v5"/><path d="M14 2v5h5"/><path d="M8.5 7h2.5M8.5 10h7"/><path d="M5 12v8.5A1.5 1.5 0 0 0 6.5 22h11a1.5 1.5 0 0 0 1.5-1.5V12" stroke-dasharray="2 2.4" opacity=".55"/></svg> PDF Erase</button><button data-tool="convert" class="${toolTab === "convert" ? "on" : ""}"><svg class="ico-qr" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3.5A1.5 1.5 0 0 1 4.5 2H8l3 3v5.5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 3 10.5z"/><path d="M8 2v3h3"/><rect x="13" y="12" width="8" height="9" rx="1.5"/><path d="M13.5 20l3-3 2 2 1-1 1.5 1.5"/><circle cx="18.5" cy="15" r=".9" fill="currentColor" stroke="none"/><path d="M14 4h2.5A2.5 2.5 0 0 1 19 6.5V9"/><path d="M17.3 7.6L19 9.3l1.7-1.7"/><path d="M10 20H7.5A2.5 2.5 0 0 1 5 17.5V15"/><path d="M3.3 16.4L5 14.7l1.7 1.7"/></svg> PDF ↔ Image</button></div><button class="btn2" id="toolLink" title="Copier le lien direct vers cet outil" aria-label="Copier le lien direct vers cet outil">🔗</button></div><div id="toolBody"></div>`;
   setToolUrl(toolTab);
   $(".sheet").classList.add("full"); $(".sheet").classList.toggle("wide", toolTab !== "pw");
   if (toolTab === "qr") renderQrTool(); else if (toolTab === "pdf") renderPdfTool(); else if (toolTab === "convert") renderConvTool(); else renderPwTool();
@@ -1905,7 +1936,7 @@ const QR_ICONS = ["🔗", "🌐", "📶", "✉️", "📞", "📱", "💬", "�
 const QR_HINT = { text:"Saisissez du texte…", json:'{"nom": "Alice", "id": 42}', link:"https://exemple.fr" };
 const loadQrLib = () => qrLibP || (qrLibP = new Promise((res, rej) => {
   if (window.qrcode) return res(window.qrcode);
-  const s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js";
+  const s = document.createElement("script"); s.integrity = "sha384-8FWZA6BGMXhsfO+BLtrJK0We6gg5o1JyO8xQm6peWDEUs17ACA5ziE/NIAkl9z2k"; s.crossOrigin = "anonymous"; s.referrerPolicy = "no-referrer"; s.src = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js";
   s.onload = () => window.qrcode ? res(window.qrcode) : (qrLibP = null, rej(new Error("lib")));
   s.onerror = () => { qrLibP = null; rej(new Error("lib")); }; document.head.appendChild(s);
 }));
@@ -2022,18 +2053,24 @@ const pdfCfg = () => { try { return { ...PDF_DEF, ...JSON.parse(localStorage.get
 const pdfSave = c => { try { localStorage.setItem("notes.pdf", JSON.stringify(c)); } catch {} };
 const pdfPctOf = c => Math.min(100, Math.max(1, parseInt(c.pct, 10) || 50));
 const PDF_DPI = [150, 200, 300];
-const PDF_JS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", PDF_WORKER = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-const PDF_LIB = "https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js";
+const PDF_JS = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js", PDF_WORKER = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+const PDF_LIB = "https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js";
+/* Sécurité : empreintes SRI — le navigateur refuse un fichier modifié sur le CDN. À recalculer si vous changez de version. */
+const SRI = {
+  [PDF_JS]: "sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e",
+  [PDF_WORKER]: "sha384-SnzOobpRMLXZ52iJvZm/C0fYw0OQemTXzTjIsdsfMcrCtCEe9qgzxTd3RSklO5x2",
+  [PDF_LIB]: "sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI"
+};
 let pdfImgMime = "image/png", pdfKind = "pdf", pdfImg = null, pdfDoc = null, pdfBytes = null, pdfName = "", pdfPage = 1, pdfPages = "", pdfBusy = false, pdfThumb = null, pdfPjsP = null;
 const loadScript = (url, test) => new Promise((res, rej) => {
   if (test()) return res();
-  const el = document.createElement("script"); el.src = url; el.onload = () => test() ? res() : rej(new Error("lib")); el.onerror = () => rej(new Error("lib")); document.head.appendChild(el);
+  const el = document.createElement("script"); if (SRI[url]) { el.integrity = SRI[url]; el.crossOrigin = "anonymous"; } el.referrerPolicy = "no-referrer"; el.src = url; el.onload = () => test() ? res() : rej(new Error("lib")); el.onerror = () => rej(new Error("lib")); document.head.appendChild(el);
 });
 const loadPdfJs = () => pdfPjsP || (pdfPjsP = (async () => {
   try {
     await loadScript(PDF_JS, () => window.pdfjsLib);
     // le worker est sur un autre domaine : on le charge via un Blob pour que le navigateur l'accepte
-    const code = await (await fetch(PDF_WORKER)).text();
+    const code = await (await fetch(PDF_WORKER, { integrity: SRI[PDF_WORKER], mode: "cors", referrerPolicy: "no-referrer" })).text();
     window.pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
     return window.pdfjsLib;
   } catch (e) { pdfPjsP = null; throw e; }
@@ -2077,7 +2114,7 @@ async function pdfOpenFile(f){
       pdfName = f.name.replace(/\.[^.]+$/, "");
     } else {
       const lib = await loadPdfJs(), bytes = new Uint8Array(await f.arrayBuffer());
-      const doc = await lib.getDocument({ data: bytes.slice() }).promise;
+      const doc = await lib.getDocument({ data: bytes.slice(), isEvalSupported: false }).promise;
       pdfDoc?.destroy?.(); pdfImg?.close?.(); pdfImg = null; pdfDoc = doc; pdfBytes = bytes; pdfKind = "pdf"; pdfName = f.name.replace(/\.pdf$/i, ""); pdfPage = 1; pdfThumb = null;
     }
     $("#toast").classList.remove("on");
@@ -2279,7 +2316,7 @@ async function cvAddFiles(list){
     const isImg = /^image\//i.test(f.type) || /\.(png|jpe?g|webp|gif|bmp|avif)$/i.test(f.name), isPdf = /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name);
     try {
       if (isImg) { const bm = await pdfLoadBitmap(f); if (!bm.width || !bm.height) throw 0; cvFiles.push({ id: ++cvSeq, name: f.name, kind:"img", bm, n:1, cache:{} }); }
-      else if (isPdf) { const lib = await loadPdfJs(), doc = await lib.getDocument({ data: new Uint8Array(await f.arrayBuffer()) }).promise; cvFiles.push({ id: ++cvSeq, name: f.name, kind:"pdf", doc, n: doc.numPages, cache:{} }); }
+      else if (isPdf) { const lib = await loadPdfJs(), doc = await lib.getDocument({ data: new Uint8Array(await f.arrayBuffer()), isEvalSupported: false }).promise; cvFiles.push({ id: ++cvSeq, name: f.name, kind:"pdf", doc, n: doc.numPages, cache:{} }); }
       else bad++;
     } catch (e) { bad++; if (isPdf && e && e.name === "PasswordException") toast("⚠ " + f.name + " : PDF protégé non pris en charge"); }
   }
